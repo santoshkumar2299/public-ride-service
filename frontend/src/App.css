@@ -1,0 +1,497 @@
+.app {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 2rem;
+  border-bottom: 2px solid #eee;
+  padding-bottom: 1rem;
+}
+
+header h1 {
+  margin: 0;
+  color: #333;
+}
+
+.back-btn {
+  background: #f0f0f0;
+  border: 1px solid #ddd;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 1rem;
+}
+
+.back-btn:hover {
+  background: #e0e0e0;
+}
+
+.role-selector {
+  text-align: center;
+}
+
+.role-selector h2 {
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.role-selector p {
+  color: #666;
+  margin-bottom: 2rem;
+}
+
+.role-buttons {
+  display: flex;
+  gap: 2rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.role-btn {
+  background: white;
+  border: 2px solid #ddd;
+  border-radius: 12px;
+  padding: 2rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 200px;
+  text-align: center;
+}
+
+.role-btn:hover {
+  border-color: #007bff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.role-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.role-btn h3 {
+  margin: 0 0 0.5rem 0;
+  color: #333;
+}
+
+.role-btn p {
+  margin: 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.rider-btn:hover {
+  border-color: #28a745;
+}
+
+.passenger-btn:hover {
+  border-color: #17a2b8;
+}
+
+.ride-form, .request-form {
+  max-width: 600px;
+  margin: 0 auto;
+  text-align: left;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: bold;
+  color: #333;
+}
+
+.form-group input, .form-group select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+  box-sizing: border-box;
+}
+
+.form-row {
+  display: flex;
+  gap: 1rem;
+}
+
+.form-row .form-group {
+  flex: 1;
+}
+
+.location-section {
+  background: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin: 1.5rem 0;
+}
+
+.location-section h3 {
+  margin: 0 0 1rem 0;
+  color: #333;
+}
+
+.location-btn {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-bottom: 1rem;
+  font-size: 1rem;
+}
+
+.location-btn:hover {
+  background: #0056b3;
+}
+
+.submit-btn {
+  background: #28a745;
+  color: white;
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1.1rem;
+  width: 100%;
+  margin-top: 1rem;
+}
+
+.submit-btn:hover:not(:disabled) {
+  background: #218838;
+}
+
+.submit-btn:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+}
+
+.ride-created {
+  text-align: center;
+  background: #d4edda;
+  border: 1px solid #c3e6cb;
+  border-radius: 8px;
+  padding: 2rem;
+  margin: 2rem 0;
+}
+
+.ride-created h2 {
+  color: #155724;
+  margin-bottom: 1rem;
+}
+
+.ride-created code {
+  background: #f8f9fa;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-family: monospace;
+}
+
+.ride-info {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-top: 1.5rem;
+  text-align: left;
+}
+
+.matches-view {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.no-matches {
+  text-align: center;
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 8px;
+  padding: 2rem;
+  margin: 2rem 0;
+}
+
+.matches-list {
+  margin-top: 2rem;
+}
+
+.match-card {
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.match-card h3 {
+  margin: 0 0 1rem 0;
+  color: #333;
+}
+
+.match-card p {
+  margin: 0.5rem 0;
+  color: #666;
+}
+
+.select-btn {
+  background: #17a2b8;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 1rem;
+}
+
+.select-btn:hover {
+  background: #138496;
+}
+
+.ride-dashboard {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.ride-dashboard h2 {
+  color: #28a745;
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.ride-info {
+  background: #d4edda;
+  border: 1px solid #c3e6cb;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.ride-info code {
+  background: #f8f9fa;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-family: monospace;
+}
+
+.ride-status {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.notification {
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 6px;
+  padding: 1rem;
+  margin-top: 1rem;
+  font-weight: bold;
+  color: #856404;
+  text-align: center;
+}
+
+.matches-section {
+  margin-bottom: 2rem;
+}
+
+.matches-section h3 {
+  color: #333;
+  margin-bottom: 1rem;
+}
+
+.passenger-card {
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.passenger-card h4 {
+  margin: 0 0 1rem 0;
+  color: #17a2b8;
+}
+
+.passenger-details {
+  background: #f8f9fa;
+  border-radius: 6px;
+  padding: 1rem;
+  margin: 1rem 0;
+}
+
+.passenger-details p {
+  margin: 0.5rem 0;
+  color: #666;
+}
+
+.passenger-actions {
+  text-align: center;
+  padding: 1rem;
+  background: #e7f3ff;
+  border-radius: 6px;
+}
+
+.contact-info {
+  margin: 0;
+  color: #0066cc;
+  font-weight: bold;
+}
+
+.no-matches {
+  text-align: center;
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 8px;
+  padding: 2rem;
+  color: #856404;
+}
+
+.no-matches p {
+  margin: 0.5rem 0;
+}
+
+.location-picker {
+  margin: 1.5rem 0;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 1.5rem;
+  background: #f8f9fa;
+}
+
+.location-picker-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.location-picker-header h3 {
+  margin: 0;
+  color: #333;
+}
+
+.toggle-map-btn {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.toggle-map-btn:hover {
+  background: #5a6268;
+}
+
+.map-container {
+  margin-top: 1rem;
+}
+
+.map-hint {
+  margin: 0.5rem 0;
+  color: #666;
+  font-style: italic;
+  text-align: center;
+}
+
+.map-placeholder {
+  background: #f8f9fa;
+  border: 2px dashed #dee2e6;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: #6c757d;
+}
+
+.map-placeholder h3 {
+  margin: 0 0 1rem 0;
+  color: #495057;
+}
+
+.map-placeholder p {
+  margin: 0.5rem 0;
+}
+
+.map-placeholder a {
+  color: #007bff;
+  text-decoration: none;
+}
+
+.map-placeholder a:hover {
+  text-decoration: underline;
+}
+
+.map-placeholder ul {
+  max-width: 300px;
+  margin: 0 auto;
+}
+
+.map-placeholder li {
+  margin: 0.25rem 0;
+  padding: 0.25rem;
+  background: white;
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
+
+.matches-map {
+  margin: 1.5rem 0;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+}
+
+.matches-map h4 {
+  margin: 0 0 1rem 0;
+  color: #333;
+  text-align: center;
+}
+
+/* Leaflet Map Styles */
+.leaflet-container {
+  border-radius: 8px;
+}
+
+.custom-marker {
+  background: none !important;
+  border: none !important;
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 8px;
+}
+
+.leaflet-popup-content {
+  margin: 8px 12px;
+}
+
+/* Map controls styling */
+.leaflet-control-zoom a {
+  background-color: white !important;
+  color: #333 !important;
+  border: 1px solid #ccc !important;
+}
+
+.leaflet-control-zoom a:hover {
+  background-color: #f0f0f0 !important;
+}
+
+/* Attribution styling */
+.leaflet-control-attribution {
+  background-color: rgba(255, 255, 255, 0.8) !important;
+  font-size: 10px !important;
+}
