@@ -1,0 +1,15 @@
+{
+  "name": "public-ride-share-mvp",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "claude": "claude",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@anthropic-ai/claude-code": "^1.0.30"
+  }
+}
