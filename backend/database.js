@@ -8,8 +8,18 @@ const db = new sqlite3.Database(dbPath);
 
 const initDB = () => {
   db.serialize(() => {
+    // Users table for authentication
+    db.run(`CREATE TABLE IF NOT EXISTS users (
+      id TEXT PRIMARY KEY,
+      username TEXT UNIQUE,
+      email TEXT UNIQUE,
+      password_hash TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`);
+
     db.run(`CREATE TABLE IF NOT EXISTS rides (
       id TEXT PRIMARY KEY,
+      user_id TEXT,
       rider_name TEXT,
       destination TEXT,
       current_lat REAL,
@@ -17,11 +27,13 @@ const initDB = () => {
       destination_lat REAL,
       destination_lng REAL,
       status TEXT DEFAULT 'active',
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users (id)
     )`);
 
     db.run(`CREATE TABLE IF NOT EXISTS requests (
       id TEXT PRIMARY KEY,
+      user_id TEXT,
       passenger_name TEXT,
       pickup_lat REAL,
       pickup_lng REAL,
@@ -29,7 +41,8 @@ const initDB = () => {
       destination_lng REAL,
       max_walk_distance INTEGER,
       status TEXT DEFAULT 'pending',
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users (id)
     )`);
 
     db.run(`CREATE TABLE IF NOT EXISTS matches (

@@ -1,22 +1,24 @@
 import { useState, useEffect } from 'react'
-import LocationPicker from './LocationPicker'
+import MapFirstView from './MapFirstView'
 import MapView from './MapView'
 import { config } from '../config/env'
 
-function RiderFlow() {
+function RiderFlow({ user, journeyData }) {
   const [formData, setFormData] = useState({
-    rider_name: '',
-    destination: '',
-    destination_lat: '',
-    destination_lng: '',
-    current_lat: '',
-    current_lng: ''
+    destination: journeyData?.destination?.address || '',
+    destination_lat: journeyData?.destination?.coordinates?.[1] || '',
+    destination_lng: journeyData?.destination?.coordinates?.[0] || '',
+    current_lat: journeyData?.pickup?.coordinates?.[1] || '',
+    current_lng: journeyData?.pickup?.coordinates?.[0] || ''
   })
   const [rideId, setRideId] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
   const [matches, setMatches] = useState([])
   const [rideStatus, setRideStatus] = useState(null)
   const [pollingInterval, setPollingInterval] = useState(null)
+  const [currentLocationAddress, setCurrentLocationAddress] = useState(journeyData?.pickup?.address || '')
+  const [destinationAddress, setDestinationAddress] = useState(journeyData?.destination?.address || '')
+  const [modalState, setModalState] = useState({ isOpen: false, mode: 'search', type: 'current' })
 
   const handleInputChange = (e) => {
     setFormData({
@@ -33,6 +35,39 @@ function RiderFlow() {
     }))
   }
 
+  const handleLocationSelect = (locationData) => {
+    if (locationData.action) {
+      // Handle action buttons (search, map)
+      setModalState({
+        isOpen: true,
+        mode: locationData.action,
+        type: locationData.type
+      });
+      return;
+    }
+
+    // Handle actual location selection
+    const { lat, lng, address, type } = locationData;
+    
+    if (modalState.type === 'current') {
+      setFormData(prev => ({
+        ...prev,
+        current_lat: lat.toString(),
+        current_lng: lng.toString()
+      }));
+      setCurrentLocationAddress(address);
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        destination_lat: lat.toString(),
+        destination_lng: lng.toString()
+      }));
+      setDestinationAddress(address);
+    }
+
+    setModalState({ isOpen: false, mode: 'search', type: 'current' });
+  };
+
   const getCurrentLocation = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -42,6 +77,7 @@ function RiderFlow() {
             current_lat: position.coords.latitude.toString(),
             current_lng: position.coords.longitude.toString()
           })
+          setCurrentLocationAddress('Current location');
         },
         (error) => {
           alert('Unable to get your location. Please enter manually.')
@@ -62,6 +98,8 @@ function RiderFlow() {
         },
         body: JSON.stringify({
           ...formData,
+          rider_name: user.username,
+          user_id: user.id,
           destination_lat: parseFloat(formData.destination_lat),
           destination_lng: parseFloat(formData.destination_lng),
           current_lat: parseFloat(formData.current_lat),
@@ -125,7 +163,7 @@ function RiderFlow() {
         <h2>🚗 Your Ride is Active!</h2>
         <div className="ride-info">
           <p><strong>Ride ID:</strong> <code>{rideId}</code></p>
-          <p><strong>Name:</strong> {formData.rider_name}</p>
+          <p><strong>Name:</strong> {user.username}</p>
           <p><strong>Destination:</strong> {formData.destination}</p>
           <p><strong>Current Location:</strong> {formData.current_lat}, {formData.current_lng}</p>
         </div>
@@ -240,77 +278,107 @@ function RiderFlow() {
     )
   }
 
+  const handleMapFirstViewSubmit = (type, data) => {
+    console.log('RiderFlow received:', { type, data });
+    console.log('User object:', user);
+    if (type === 'offer') {
+      // Handle ride offer submission
+      const newFormData = {
+        destination: data.destination.address,
+        destination_lat: data.destination.lat.toString(),
+        destination_lng: data.destination.lng.toString(),
+        current_lat: data.pickup.lat.toString(),
+        current_lng: data.pickup.lng.toString()
+      };
+      
+      console.log('Creating ride with data:', newFormData);
+      setFormData(newFormData);
+      setCurrentLocationAddress(data.pickup.address);
+      setDestinationAddress(data.destination.address);
+      
+      // Automatically submit the form
+      submitRideOffer(newFormData);
+    }
+  };
+
+  const submitRideOffer = async (rideFormData) => {
+    setIsLoading(true);
+
+    try {
+      const rideData = {
+        user_id: user.id,
+        rider_name: user.username,
+        destination: rideFormData.destination,
+        destination_lat: parseFloat(rideFormData.destination_lat),
+        destination_lng: parseFloat(rideFormData.destination_lng),
+        current_lat: parseFloat(rideFormData.current_lat),
+        current_lng: parseFloat(rideFormData.current_lng),
+        status: 'active',
+        created_at: new Date().toISOString()
+      };
+
+      // Try backend first
+      try {
+        const response = await fetch(`${config.apiBaseUrl}/api/rides`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(rideData)
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+          setRideId(data.id);
+          setRideStatus({ status: 'active', id: data.id });
+          startPolling(data.id);
+          return;
+        }
+      } catch (backendError) {
+        console.log('Backend not available, using localStorage fallback');
+      }
+
+      // Fallback to localStorage
+      const rideId = Date.now().toString();
+      const rideWithId = { ...rideData, id: rideId };
+      
+      // Store ride in localStorage
+      const storageKey = `active_rides_${user.id}`;
+      const existingRides = JSON.parse(localStorage.getItem(storageKey) || '[]');
+      const updatedRides = [...existingRides, rideWithId];
+      localStorage.setItem(storageKey, JSON.stringify(updatedRides));
+      
+      // Update UI immediately
+      setRideId(rideId);
+      setRideStatus({ status: 'active', id: rideId, match_count: 0, has_new_matches: false });
+      setMatches([]);
+      
+      alert('🚗 Ride offer created successfully! You\'re now waiting for passenger requests.');
+      
+    } catch (error) {
+      console.error('Error creating ride:', error);
+      alert('Error creating ride: ' + error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="rider-flow">
-      <h2>🚗 Offer a Ride</h2>
-      <form onSubmit={handleSubmit} className="ride-form">
-        <div className="form-group">
-          <label htmlFor="rider_name">Your Name:</label>
-          <input
-            type="text"
-            id="rider_name"
-            name="rider_name"
-            value={formData.rider_name}
-            onChange={handleInputChange}
-            required
-          />
+      <MapFirstView
+        user={user}
+        journeyData={journeyData}
+        onRideRequest={null} // Rider flow doesn't request rides
+        onRideOffer={handleMapFirstViewSubmit}
+      />
+      
+      {isLoading && (
+        <div className="loading-overlay">
+          <div className="loading-message">
+            🚗 Creating your ride offer...
+          </div>
         </div>
-
-        <div className="form-group">
-          <label htmlFor="destination">Destination:</label>
-          <input
-            type="text"
-            id="destination"
-            name="destination"
-            value={formData.destination}
-            onChange={handleInputChange}
-            placeholder="e.g., Downtown Office Building"
-            required
-          />
-        </div>
-
-        <LocationPicker
-          title="📍 Destination Location"
-          latValue={formData.destination_lat}
-          lngValue={formData.destination_lng}
-          onLatChange={handleInputChange}
-          onLngChange={handleInputChange}
-          onCoordinateUpdate={handleCoordinateUpdate}
-          latName="destination_lat"
-          lngName="destination_lng"
-          latLabel="Destination Latitude"
-          lngLabel="Destination Longitude"
-          latPlaceholder="e.g., 37.7749"
-          lngPlaceholder="e.g., -122.4194"
-          required
-        />
-
-        <div className="location-section">
-          <button type="button" onClick={getCurrentLocation} className="location-btn">
-            📍 Get My Current Location
-          </button>
-          
-          <LocationPicker
-            title="📍 Current Location"
-            latValue={formData.current_lat}
-            lngValue={formData.current_lng}
-            onLatChange={handleInputChange}
-            onLngChange={handleInputChange}
-            onCoordinateUpdate={handleCoordinateUpdate}
-            latName="current_lat"
-            lngName="current_lng"
-            latLabel="Current Latitude"
-            lngLabel="Current Longitude"
-            latPlaceholder="e.g., 37.7849"
-            lngPlaceholder="e.g., -122.4094"
-            required
-          />
-        </div>
-
-        <button type="submit" disabled={isLoading} className="submit-btn">
-          {isLoading ? 'Creating Ride...' : 'Create Ride'}
-        </button>
-      </form>
+      )}
     </div>
   )
 }

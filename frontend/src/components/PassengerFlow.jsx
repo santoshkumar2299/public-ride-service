@@ -1,21 +1,33 @@
-import { useState } from 'react'
-import LocationPicker from './LocationPicker'
+import { useState, useEffect } from 'react'
+import MapFirstView from './MapFirstView'
 import MapView from './MapView'
 import { config } from '../config/env'
+import { WalkIcon, SearchIcon, LocationIcon, TargetIcon, CarIcon, ArrowLeftIcon } from './Icons'
 
-function PassengerFlow() {
-  const [step, setStep] = useState('request') // 'request' or 'matches'
+function PassengerFlow({ user, journeyData }) {
+  // If journeyData is provided, we can skip the request form and go to matches
+  const [step, setStep] = useState(journeyData ? 'matches' : 'request') // 'request' or 'matches'
   const [formData, setFormData] = useState({
-    passenger_name: '',
-    pickup_lat: '',
-    pickup_lng: '',
-    destination_lat: '',
-    destination_lng: '',
+    pickup_lat: journeyData?.pickup?.coordinates?.[1] || '',
+    pickup_lng: journeyData?.pickup?.coordinates?.[0] || '',
+    destination_lat: journeyData?.destination?.coordinates?.[1] || '',
+    destination_lng: journeyData?.destination?.coordinates?.[0] || '',
     max_walk_distance: config.defaultWalkDistance.toString()
   })
   const [requestId, setRequestId] = useState(null)
   const [matches, setMatches] = useState([])
   const [isLoading, setIsLoading] = useState(false)
+  const [pickupAddress, setPickupAddress] = useState(journeyData?.pickup?.address || '')
+  const [destinationAddress, setDestinationAddress] = useState(journeyData?.destination?.address || '')
+  const [modalState, setModalState] = useState({ isOpen: false, mode: 'search', type: 'pickup' })
+
+  // Auto-search for matches when journeyData is provided
+  useEffect(() => {
+    if (journeyData && step === 'matches' && formData.pickup_lat && formData.destination_lat) {
+      // Automatically search for matches
+      handleSubmit({ preventDefault: () => {} })
+    }
+  }, [journeyData])
 
   const handleInputChange = (e) => {
     setFormData({
@@ -32,6 +44,39 @@ function PassengerFlow() {
     }))
   }
 
+  const handleLocationSelect = (locationData) => {
+    if (locationData.action) {
+      // Handle action buttons (search, map)
+      setModalState({
+        isOpen: true,
+        mode: locationData.action,
+        type: locationData.type
+      });
+      return;
+    }
+
+    // Handle actual location selection
+    const { lat, lng, address, type } = locationData;
+    
+    if (modalState.type === 'pickup') {
+      setFormData(prev => ({
+        ...prev,
+        pickup_lat: lat.toString(),
+        pickup_lng: lng.toString()
+      }));
+      setPickupAddress(address);
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        destination_lat: lat.toString(),
+        destination_lng: lng.toString()
+      }));
+      setDestinationAddress(address);
+    }
+
+    setModalState({ isOpen: false, mode: 'search', type: 'pickup' });
+  };
+
   const getCurrentLocation = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -41,6 +86,7 @@ function PassengerFlow() {
             pickup_lat: position.coords.latitude.toString(),
             pickup_lng: position.coords.longitude.toString()
           })
+          setPickupAddress('Current location');
         },
         (error) => {
           alert('Unable to get your location. Please enter manually.')
@@ -61,6 +107,8 @@ function PassengerFlow() {
         },
         body: JSON.stringify({
           ...formData,
+          passenger_name: user.username,
+          user_id: user.id,
           pickup_lat: parseFloat(formData.pickup_lat),
           pickup_lng: parseFloat(formData.pickup_lng),
           destination_lat: parseFloat(formData.destination_lat),
@@ -127,12 +175,12 @@ function PassengerFlow() {
   if (step === 'matches') {
     return (
       <div className="matches-view">
-        <h2>🔍 Available Rides</h2>
+        <h2><SearchIcon size={24} /> Available Rides</h2>
         {matches.length === 0 ? (
           <div className="no-matches">
             <p>No matching rides found at the moment.</p>
             <button onClick={() => setStep('request')} className="back-btn">
-              ← Create New Request
+              <ArrowLeftIcon size={20} /> Create New Request
             </button>
           </div>
         ) : (
@@ -141,7 +189,7 @@ function PassengerFlow() {
             
             {/* Map showing all matches */}
             <div className="matches-map">
-              <h4>🗺️ Rides Near You</h4>
+              <h4><LocationIcon size={20} /> Rides Near You</h4>
               <MapView
                 center={[parseFloat(formData.pickup_lat) || config.defaultMapCenter.lat, parseFloat(formData.pickup_lng) || config.defaultMapCenter.lng]}
                 zoom={12}
@@ -151,7 +199,7 @@ function PassengerFlow() {
                     latitude: parseFloat(formData.pickup_lat),
                     longitude: parseFloat(formData.pickup_lng),
                     title: "Your Pickup Location",
-                    icon: "🚶",
+                    icon: "pickup",
                     color: "#007bff"
                   }] : []),
                   // Your destination
@@ -159,7 +207,7 @@ function PassengerFlow() {
                     latitude: parseFloat(formData.destination_lat),
                     longitude: parseFloat(formData.destination_lng),
                     title: "Your Destination",
-                    icon: "🎯",
+                    icon: "destination",
                     color: "#28a745"
                   }] : []),
                   // All matching rides
@@ -168,7 +216,7 @@ function PassengerFlow() {
                     longitude: match.ride.current_lng,
                     title: `${match.ride.rider_name}'s Ride`,
                     description: `Going to: ${match.ride.destination}`,
-                    icon: "🚗",
+                    icon: "car",
                     color: "#dc3545"
                   }))
                 ]}
@@ -197,7 +245,7 @@ function PassengerFlow() {
 
             {matches.map((match, index) => (
               <div key={index} className="match-card">
-                <h3>🚗 {match.ride.rider_name}</h3>
+                <h3><CarIcon size={20} /> {match.ride.rider_name}</h3>
                 <p><strong>Going to:</strong> {match.ride.destination}</p>
                 <p><strong>Distance to meeting point:</strong> {Math.round(match.distance)}m</p>
                 <p><strong>Direction similarity:</strong> {Math.round(match.bearing_similarity)}%</p>
@@ -216,80 +264,77 @@ function PassengerFlow() {
     )
   }
 
+  const handleMapFirstViewSubmit = (type, data) => {
+    if (type === 'request') {
+      // Handle ride request submission
+      const newFormData = {
+        pickup_lat: data.pickup.lat.toString(),
+        pickup_lng: data.pickup.lng.toString(),
+        destination_lat: data.destination.lat.toString(),
+        destination_lng: data.destination.lng.toString(),
+        max_walk_distance: config.defaultWalkDistance.toString()
+      };
+      
+      setFormData(newFormData);
+      setPickupAddress(data.pickup.address);
+      setDestinationAddress(data.destination.address);
+      
+      // Automatically submit the form
+      submitRequest(newFormData, data.pickup.address, data.destination.address);
+    }
+  };
+
+  const submitRequest = async (requestFormData, pickupAddr, destinationAddr) => {
+    setIsLoading(true);
+
+    try {
+      const response = await fetch(`${config.apiBaseUrl}/api/requests`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...requestFormData,
+          passenger_name: user.username,
+          user_id: user.id,
+          pickup_lat: parseFloat(requestFormData.pickup_lat),
+          pickup_lng: parseFloat(requestFormData.pickup_lng),
+          destination_lat: parseFloat(requestFormData.destination_lat),
+          destination_lng: parseFloat(requestFormData.destination_lng),
+          max_walk_distance: parseInt(requestFormData.max_walk_distance)
+        })
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setRequestId(data.id);
+        await findMatches(data.id);
+      } else {
+        alert('Error creating request: ' + data.error);
+      }
+    } catch (error) {
+      alert('Error: ' + error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="passenger-flow">
-      <h2>🚶 Request a Ride</h2>
-      <form onSubmit={handleSubmit} className="request-form">
-        <div className="form-group">
-          <label htmlFor="passenger_name">Your Name:</label>
-          <input
-            type="text"
-            id="passenger_name"
-            name="passenger_name"
-            value={formData.passenger_name}
-            onChange={handleInputChange}
-            required
-          />
+      <MapFirstView
+        user={user}
+        journeyData={journeyData}
+        onRideRequest={handleMapFirstViewSubmit}
+        onRideOffer={null} // Passenger flow doesn't offer rides
+      />
+      
+      {isLoading && (
+        <div className="loading-overlay">
+          <div className="loading-message">
+            🔍 Finding matching rides...
+          </div>
         </div>
-
-        <div className="location-section">
-          <h3>Pickup Location:</h3>
-          <button type="button" onClick={getCurrentLocation} className="location-btn">
-            📍 Use My Current Location
-          </button>
-          
-          <LocationPicker
-            title="📍 Pickup Location"
-            latValue={formData.pickup_lat}
-            lngValue={formData.pickup_lng}
-            onLatChange={handleInputChange}
-            onLngChange={handleInputChange}
-            onCoordinateUpdate={handleCoordinateUpdate}
-            latName="pickup_lat"
-            lngName="pickup_lng"
-            latLabel="Pickup Latitude"
-            lngLabel="Pickup Longitude"
-            latPlaceholder="e.g., 37.7749"
-            lngPlaceholder="e.g., -122.4194"
-            required
-          />
-        </div>
-
-        <LocationPicker
-          title="📍 Destination Location"
-          latValue={formData.destination_lat}
-          lngValue={formData.destination_lng}
-          onLatChange={handleInputChange}
-          onLngChange={handleInputChange}
-          onCoordinateUpdate={handleCoordinateUpdate}
-          latName="destination_lat"
-          lngName="destination_lng"
-          latLabel="Destination Latitude"
-          lngLabel="Destination Longitude"
-          latPlaceholder="e.g., 37.7849"
-          lngPlaceholder="e.g., -122.4094"
-          required
-        />
-
-        <div className="form-group">
-          <label htmlFor="max_walk_distance">Maximum walking distance (meters):</label>
-          <select
-            id="max_walk_distance"
-            name="max_walk_distance"
-            value={formData.max_walk_distance}
-            onChange={handleInputChange}
-          >
-            <option value="500">500m (5 min walk)</option>
-            <option value={config.defaultWalkDistance}>{config.defaultWalkDistance}m (10 min walk)</option>
-            <option value="1500">1500m (15 min walk)</option>
-            <option value={config.maxWalkDistance}>{config.maxWalkDistance}m (20 min walk)</option>
-          </select>
-        </div>
-
-        <button type="submit" disabled={isLoading} className="submit-btn">
-          {isLoading ? 'Finding Rides...' : 'Find Matching Rides'}
-        </button>
-      </form>
+      )}
     </div>
   )
 }

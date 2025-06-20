@@ -1,3 +1,5 @@
+import { CarIcon, WalkIcon } from './Icons'
+
 function RoleSelector({ onRoleSelect }) {
   return (
     <div className="role-selector">
@@ -9,7 +11,9 @@ function RoleSelector({ onRoleSelect }) {
           className="role-btn rider-btn"
           onClick={() => onRoleSelect('rider')}
         >
-          <div className="role-icon">🚗</div>
+          <div className="role-icon">
+            <CarIcon size={48} color="#28a745" />
+          </div>
           <h3>I'm a Rider</h3>
           <p>I'm driving and can pick someone up</p>
         </button>
@@ -18,7 +22,9 @@ function RoleSelector({ onRoleSelect }) {
           className="role-btn passenger-btn"
           onClick={() => onRoleSelect('passenger')}
         >
-          <div className="role-icon">🚶</div>
+          <div className="role-icon">
+            <WalkIcon size={48} color="#17a2b8" />
+          </div>
           <h3>I'm a Passenger</h3>
           <p>I need a ride to my destination</p>
         </button>

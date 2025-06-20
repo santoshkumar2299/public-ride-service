@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { config } from '../config/env';
@@ -50,14 +50,83 @@ function MapClickHandler({ onMapClick }) {
   return null;
 }
 
+// Component to handle map bounds
+function MapBoundsHandler({ bounds }) {
+  const map = useMap();
+  
+  useEffect(() => {
+    if (bounds && bounds.north && bounds.south && bounds.east && bounds.west) {
+      const leafletBounds = L.latLngBounds(
+        [bounds.south, bounds.west], // southwest
+        [bounds.north, bounds.east]  // northeast
+      );
+      
+      // Fit the map to the bounds with padding
+      map.fitBounds(leafletBounds, {
+        padding: [20, 20], // 20px padding on all sides
+        maxZoom: 16,       // Don't zoom in too close
+        animate: true,     // Smooth animation
+        duration: 0.5      // Animation duration
+      });
+    }
+  }, [map, bounds]);
+  
+  return null;
+}
+
+// Component to handle external zoom control
+function MapZoomHandler({ zoom, onZoomChange }) {
+  const map = useMap();
+  
+  useEffect(() => {
+    if (zoom !== undefined && zoom !== null) {
+      map.setZoom(zoom);
+    }
+  }, [map, zoom]);
+  
+  useEffect(() => {
+    if (onZoomChange) {
+      map.on('zoomend', () => {
+        onZoomChange(map.getZoom());
+      });
+      
+      return () => {
+        map.off('zoomend');
+      };
+    }
+  }, [map, onZoomChange]);
+  
+  return null;
+}
+
+// Component to handle map center updates
+function MapCenterHandler({ center, zoom }) {
+  const map = useMap();
+  
+  useEffect(() => {
+    if (center && center.length === 2) {
+      console.log('Updating map center to:', center, 'with zoom:', zoom);
+      if (zoom) {
+        map.setView(center, zoom, { animate: true, duration: 0.5 });
+      } else {
+        map.setView(center, map.getZoom(), { animate: true, duration: 0.5 });
+      }
+    }
+  }, [map, center, zoom]);
+  
+  return null;
+}
+
 function MapView({ 
   center = [config.defaultMapCenter.lat, config.defaultMapCenter.lng], 
   zoom = config.defaultMapZoom, 
   markers = [], 
   routes = [], // New prop for routes between points
+  bounds = null, // New prop for automatic bounds fitting
   onMapClick = null,
   height = '400px',
-  showControls = true 
+  showControls = true,
+  onZoomChange = null // New prop for external zoom control
 }) {
   const mapRef = useRef();
   const [routeLines, setRouteLines] = useState([]);
@@ -132,6 +201,7 @@ function MapView({
         zoom={zoom}
         style={{ width: '100%', height: '100%' }}
         ref={mapRef}
+        zoomControl={showControls} // Disable default zoom controls when showControls is false
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -139,6 +209,9 @@ function MapView({
         />
         
         {onMapClick && <MapClickHandler onMapClick={onMapClick} />}
+        {bounds && <MapBoundsHandler bounds={bounds} />}
+        {onZoomChange && <MapZoomHandler zoom={zoom} onZoomChange={onZoomChange} />}
+        <MapCenterHandler center={center} zoom={zoom} />
         
         {/* Render route polylines */}
         {routeLines.map((route, index) => (
