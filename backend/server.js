@@ -7,6 +7,12 @@ const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require('uuid');
 const { db, initDB } = require('./database');
 const { findMatches, createMatch } = require('./matching');
+const { TransportService } = require('./services/transportService');
+const { SocialScoreService } = require('./services/socialScoreService');
+
+// Initialize services
+const transportService = new TransportService();
+const socialScoreService = new SocialScoreService();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -397,6 +403,216 @@ app.get('/api/users/:userId/recent-locations', (req, res) => {
       recentLocations: rows
     });
   });
+});
+
+// TRANSPORT API ENDPOINTS
+
+// Get all transport types
+app.get('/api/transports/types', async (req, res) => {
+  try {
+    const types = await transportService.getAllTransportTypes();
+    res.json({ transport_types: types });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get routes by transport type
+app.get('/api/transports/routes', async (req, res) => {
+  try {
+    const { type_id, city_id } = req.query;
+    
+    if (!type_id) {
+      return res.status(400).json({ error: 'type_id query parameter required' });
+    }
+
+    const routes = await transportService.getRoutesByTransportType(type_id, city_id);
+    res.json({ routes });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get stops for a specific route
+app.get('/api/transports/routes/:id/stops', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const stops = await transportService.getRouteStops(id);
+    res.json({ stops });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Create a new route (admin functionality)
+app.post('/api/transports/routes', async (req, res) => {
+  try {
+    const route = await transportService.createRoute(req.body);
+    res.status(201).json({ message: 'Route created', route });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Add a stop to a route
+app.post('/api/transports/routes/:id/stops', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const stop = await transportService.addStopToRoute(id, req.body);
+    res.status(201).json({ message: 'Stop added', stop });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Start tracking a route
+app.post('/api/tracking/start', async (req, res) => {
+  try {
+    const { user_id, route_id, location } = req.body;
+    
+    if (!user_id || !route_id || !location) {
+      return res.status(400).json({ error: 'user_id, route_id, and location are required' });
+    }
+
+    // Initialize user social score if not exists
+    await socialScoreService.initializeUserScore(user_id);
+    
+    const tracking = await transportService.startTracking(user_id, route_id, location);
+    res.status(201).json({ message: 'Tracking started', tracking });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Update tracking location
+app.patch('/api/tracking/:id/location', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { location } = req.body;
+    
+    if (!location) {
+      return res.status(400).json({ error: 'location is required' });
+    }
+
+    const result = await transportService.updateTrackingLocation(id, location);
+    res.json({ message: 'Location updated', ...result });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Stop tracking
+app.post('/api/tracking/:id/stop', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await transportService.stopTracking(id);
+    res.json({ message: 'Tracking stopped', ...result });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get live tracking data for a route
+app.get('/api/tracking/live/:routeId', async (req, res) => {
+  try {
+    const { routeId } = req.params;
+    const liveData = await transportService.getLiveTracking(routeId);
+    res.json({ live_tracking: liveData });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// SOCIAL SCORING API ENDPOINTS
+
+// Get user's social score
+app.get('/api/social/profile/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const score = await socialScoreService.getUserScore(userId);
+    res.json({ profile: score });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Calculate and update user's social score
+app.post('/api/social/calculate/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const scoreData = await socialScoreService.calculateSocialScore(userId);
+    res.json({ message: 'Score calculated', ...scoreData });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Add a contribution (tracking session)
+app.post('/api/social/contribution', async (req, res) => {
+  try {
+    const { user_id, distance, session_duration } = req.body;
+    
+    if (!user_id) {
+      return res.status(400).json({ error: 'user_id is required' });
+    }
+
+    await socialScoreService.addContribution(user_id, { distance, session_duration });
+    
+    // Recalculate score after contribution
+    const scoreData = await socialScoreService.calculateSocialScore(user_id);
+    
+    res.json({ message: 'Contribution added', ...scoreData });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get leaderboard
+app.get('/api/social/leaderboard', async (req, res) => {
+  try {
+    const { limit = 10, timeframe = 'all' } = req.query;
+    const leaderboard = await socialScoreService.getLeaderboard(parseInt(limit), timeframe);
+    res.json({ leaderboard });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// PREDICTION API ENDPOINTS (Basic implementation)
+
+// Get arrival prediction for a stop
+app.get('/api/predictions/route/:routeId/stop/:stopId', async (req, res) => {
+  try {
+    const { routeId, stopId } = req.params;
+    const { current_location } = req.query;
+    
+    if (!current_location) {
+      return res.status(400).json({ error: 'current_location query parameter required' });
+    }
+
+    const location = JSON.parse(current_location);
+    const route = await transportService.getRouteStops(routeId);
+    const targetStop = route.find(stop => stop.id == stopId);
+    
+    if (!targetStop) {
+      return res.status(404).json({ error: 'Stop not found' });
+    }
+
+    // Get the appropriate transport provider
+    const provider = transportService.getProvider('bus'); // Default to bus for now
+    const prediction = await provider.calculateETA(location, targetStop, { route_id: routeId });
+    
+    res.json({
+      route_id: routeId,
+      stop_id: stopId,
+      predicted_arrival_time: new Date(Date.now() + prediction.eta_minutes * 60000).toISOString(),
+      confidence_score: prediction.confidence,
+      method: prediction.method,
+      created_at: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 initDB();
