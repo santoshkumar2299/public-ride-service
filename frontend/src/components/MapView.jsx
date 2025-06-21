@@ -43,7 +43,10 @@ function MapClickHandler({ onMapClick }) {
   useMapEvents({
     click: (e) => {
       if (onMapClick) {
-        onMapClick({ lngLat: { lat: e.latlng.lat, lng: e.latlng.lng } });
+        onMapClick({ 
+          lngLat: { lat: e.latlng.lat, lng: e.latlng.lng },
+          originalEvent: e.originalEvent
+        });
       }
     },
   });
@@ -130,9 +133,17 @@ function MapView({
 }) {
   const mapRef = useRef();
   const [routeLines, setRouteLines] = useState([]);
+  const routesRef = useRef();
 
   // Fetch routes when routes prop changes
   useEffect(() => {
+    // Skip if routes haven't actually changed
+    if (JSON.stringify(routes) === JSON.stringify(routesRef.current)) {
+      return;
+    }
+    
+    routesRef.current = routes;
+    
     const fetchRoutes = async () => {
       if (!routes || routes.length === 0) {
         setRouteLines([]);
@@ -164,7 +175,12 @@ function MapView({
       setRouteLines(newRouteLines);
     };
 
-    fetchRoutes();
+    // Only fetch if routes exist and is non-empty
+    if (routes && routes.length > 0) {
+      fetchRoutes();
+    } else {
+      setRouteLines([]);
+    }
   }, [routes]);
 
   // Check if maps are disabled
