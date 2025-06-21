@@ -1,29 +1,15 @@
 import { useState, useEffect, useRef } from 'react'
-import { CarIcon, ArrowLeftIcon, UserIcon, SettingsIcon, LogoutIcon, ProfileIcon, HistoryIcon, ActiveIcon, HomeIcon } from './Icons'
-import useDeviceDetection from '../hooks/useDeviceDetection'
+import { CarIcon, LogoutIcon, ProfileIcon, HistoryIcon, ActiveIcon, HomeIcon } from './Icons'
 
 function Header({ 
   user, 
   currentView, 
   userRole, 
-  journeyData, 
   onNavigate, 
-  onGoBack, 
-  onLogout,
-  selectedTransportType,
-  onChangeTransport
+  onLogout
 }) {
   const [showUserMenu, setShowUserMenu] = useState(false)
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const userMenuRef = useRef(null)
-  
-  // Device detection
-  const deviceInfo = useDeviceDetection()
-  
-  // Log device info for debugging
-  useEffect(() => {
-    console.log('Device Detection:', deviceInfo)
-  }, [deviceInfo])
 
   // Close menus when clicking outside
   useEffect(() => {
@@ -37,287 +23,101 @@ function Header({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // Get current page title
-  const getPageTitle = () => {
-    if (userRole === 'passenger') return 'Request Ride'
-    if (userRole === 'rider') return 'Offer Ride'
-    
-    switch (currentView) {
-      case 'ride-history': return 'Ride History'
-      case 'active-rides': return 'Active Rides'
-      case 'profile': return 'Profile'
-      case 'journey-complete': return 'Journey Complete'
-      default: return 'Transit Tracker'
-    }
-  }
-
-  const getTransportIcon = () => {
-    if (!selectedTransportType) return '🚗'
-    return selectedTransportType.icon || '🚌'
-  }
-
-  const showBackButton = userRole || currentView === 'journey-complete'
-
-  const navigationItems = [
-    { id: 'home', label: 'Home', icon: HomeIcon },
-    { id: 'active-rides', label: 'Active Rides', icon: ActiveIcon },
-    { id: 'ride-history', label: 'History', icon: HistoryIcon },
-    { id: 'profile', label: 'Profile', icon: ProfileIcon }
-  ]
-
-  // Render different layouts based on device type
-  if (deviceInfo.isMobile) {
-    return (
-      <header className="mobile-header">
-        <div className="header-container mobile">
-          {/* Mobile: Back button on left */}
-          {showBackButton && (
-            <button onClick={onGoBack} className="mobile-back-btn">
-              <ArrowLeftIcon size={20} />
-            </button>
-          )}
-          
-          {/* Mobile: App name in center */}
-          <div className="mobile-brand" onClick={() => onNavigate('home')}>
-            <span className="transport-icon">{getTransportIcon()}</span>
-            <div className="brand-text">
-              <span className="mobile-app-name">Transit Tracker</span>
-              {selectedTransportType && (
-                <span className="transport-mode">{selectedTransportType.name}</span>
-              )}
-            </div>
-            {onChangeTransport && (
-              <button className="change-transport-btn" onClick={onChangeTransport}>
-                ⚙️
-              </button>
-            )}
-          </div>
-
-          {/* Mobile: User avatar on right */}
-          <div className="user-menu mobile" ref={userMenuRef}>
-            <button 
-              className="mobile-user-btn"
-              onClick={() => setShowUserMenu(!showUserMenu)}
-            >
-              <div className="user-avatar mobile">
-                {user.username?.charAt(0).toUpperCase() || 'U'}
-              </div>
-            </button>
-
-            {showUserMenu && (
-              <div className="mobile-user-dropdown">
-                <div className="dropdown-header mobile">
-                  <div className="user-avatar large">
-                    {user.username?.charAt(0).toUpperCase() || 'U'}
-                  </div>
-                  <div>
-                    <div className="dropdown-username">{user.username}</div>
-                    <div className="dropdown-email">user@rideshare.com</div>
-                    <div className="device-info">📱 Mobile • {deviceInfo.os}</div>
-                  </div>
-                </div>
-                
-                <div className="dropdown-divider"></div>
-                
-                <div className="dropdown-items mobile">
-                  <button
-                    className="dropdown-item mobile"
-                    onClick={() => {
-                      onNavigate('home')
-                      setShowUserMenu(false)
-                    }}
-                  >
-                    <HomeIcon size={18} />
-                    <span>Home</span>
-                  </button>
-
-                  <button
-                    className="dropdown-item mobile"
-                    onClick={() => {
-                      onNavigate('active-rides')
-                      setShowUserMenu(false)
-                    }}
-                  >
-                    <ActiveIcon size={18} />
-                    <span>Active Rides</span>
-                  </button>
-                  
-                  <button
-                    className="dropdown-item mobile"
-                    onClick={() => {
-                      onNavigate('ride-history')
-                      setShowUserMenu(false)
-                    }}
-                  >
-                    <HistoryIcon size={18} />
-                    <span>Ride History</span>
-                  </button>
-                  
-                  <button
-                    className="dropdown-item mobile"
-                    onClick={() => {
-                      onNavigate('profile')
-                      setShowUserMenu(false)
-                    }}
-                  >
-                    <ProfileIcon size={18} />
-                    <span>Profile</span>
-                  </button>
-                  
-                  <button className="dropdown-item mobile" disabled>
-                    <SettingsIcon size={18} />
-                    <span>Settings</span>
-                    <span className="badge">Soon</span>
-                  </button>
-                </div>
-                
-                <div className="dropdown-divider"></div>
-                
-                <button
-                  className="dropdown-item logout mobile"
-                  onClick={() => {
-                    onLogout()
-                    setShowUserMenu(false)
-                  }}
-                >
-                  <LogoutIcon size={18} />
-                  <span>Logout</span>
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </header>
-    )
-  }
-
-  // Desktop/Tablet Layout
+  // Simplified header - just logo on left and user button on right
   return (
-    <header className="desktop-header">
-      <div className="header-container desktop">
-        {/* Desktop: App Name/Brand on left */}
-        <div className="app-brand desktop" onClick={() => onNavigate('home')}>
-          <span className="transport-icon large">{getTransportIcon()}</span>
-          <div className="brand-info">
-            <span className="app-name desktop">Transit Tracker</span>
-            <span className="app-tagline">
-              {selectedTransportType ? selectedTransportType.name : 'Multi-Modal Transport'}
-            </span>
-          </div>
-          {onChangeTransport && (
-            <button className="change-transport-btn desktop" onClick={onChangeTransport}>
-              Change Mode
-            </button>
-          )}
+    <header className="simplified-header">
+      <div className="header-container">
+        {/* Logo on left */}
+        <div className="app-brand" onClick={() => onNavigate('home')}>
+          <CarIcon size={24} />
+          <span className="app-name">Transit Tracker</span>
         </div>
 
-        {/* Desktop: Actions on right */}
-        <div className="desktop-actions">
-          {/* Back Button (when needed) */}
-          {showBackButton && (
-            <button onClick={onGoBack} className="desktop-back-btn">
-              <ArrowLeftIcon size={18} />
-              <span>Back</span>
-            </button>
-          )}
+        {/* User menu on right */}
+        <div className="user-menu" ref={userMenuRef}>
+          <button 
+            className="user-btn"
+            onClick={() => setShowUserMenu(!showUserMenu)}
+          >
+            <div className="user-avatar">
+              {user.username?.charAt(0).toUpperCase() || 'U'}
+            </div>
+          </button>
 
-          {/* User Menu */}
-          <div className="user-menu desktop" ref={userMenuRef}>
-            <button 
-              className="desktop-user-btn"
-              onClick={() => setShowUserMenu(!showUserMenu)}
-            >
-              <div className="user-avatar desktop">
-                {user.username?.charAt(0).toUpperCase() || 'U'}
-              </div>
-              <div className="user-details">
-                <span className="username">{user.username}</span>
-                <span className="status">🖥️ {deviceInfo.os}</span>
-              </div>
-            </button>
-
-            {showUserMenu && (
-              <div className="desktop-user-dropdown">
-                <div className="dropdown-header desktop">
-                  <div className="user-avatar large">
-                    {user.username?.charAt(0).toUpperCase() || 'U'}
-                  </div>
-                  <div>
-                    <div className="dropdown-username">{user.username}</div>
-                    <div className="dropdown-email">user@rideshare.com</div>
-                    <div className="device-info">🖥️ Desktop • {deviceInfo.browser} • {deviceInfo.os}</div>
-                  </div>
+          {showUserMenu && (
+            <div className="user-dropdown">
+              <div className="dropdown-header">
+                <div className="user-avatar large">
+                  {user.username?.charAt(0).toUpperCase() || 'U'}
                 </div>
-                
-                <div className="dropdown-divider"></div>
-                
-                <div className="dropdown-items desktop">
-                  <button
-                    className="dropdown-item desktop"
-                    onClick={() => {
-                      onNavigate('home')
-                      setShowUserMenu(false)
-                    }}
-                  >
-                    <HomeIcon size={16} />
-                    <span>Home</span>
-                  </button>
-
-                  <button
-                    className="dropdown-item desktop"
-                    onClick={() => {
-                      onNavigate('active-rides')
-                      setShowUserMenu(false)
-                    }}
-                  >
-                    <ActiveIcon size={16} />
-                    <span>Active Rides</span>
-                  </button>
-                  
-                  <button
-                    className="dropdown-item desktop"
-                    onClick={() => {
-                      onNavigate('ride-history')
-                      setShowUserMenu(false)
-                    }}
-                  >
-                    <HistoryIcon size={16} />
-                    <span>Ride History</span>
-                  </button>
-                  
-                  <button
-                    className="dropdown-item desktop"
-                    onClick={() => {
-                      onNavigate('profile')
-                      setShowUserMenu(false)
-                    }}
-                  >
-                    <ProfileIcon size={16} />
-                    <span>Profile Settings</span>
-                  </button>
-                  
-                  <button className="dropdown-item desktop" disabled>
-                    <SettingsIcon size={16} />
-                    <span>Preferences</span>
-                    <span className="badge">Soon</span>
-                  </button>
+                <div>
+                  <div className="dropdown-username">{user.username}</div>
+                  <div className="dropdown-email">user@rideshare.com</div>
                 </div>
-                
-                <div className="dropdown-divider"></div>
-                
+              </div>
+              
+              <div className="dropdown-divider"></div>
+              
+              <div className="dropdown-items">
                 <button
-                  className="dropdown-item logout desktop"
+                  className="dropdown-item"
                   onClick={() => {
-                    onLogout()
+                    onNavigate('home')
                     setShowUserMenu(false)
                   }}
                 >
-                  <LogoutIcon size={16} />
-                  <span>Logout</span>
+                  <HomeIcon size={16} />
+                  <span>Home</span>
+                </button>
+
+                <button
+                  className="dropdown-item"
+                  onClick={() => {
+                    onNavigate('active-rides')
+                    setShowUserMenu(false)
+                  }}
+                >
+                  <ActiveIcon size={16} />
+                  <span>Active Rides</span>
+                </button>
+                
+                <button
+                  className="dropdown-item"
+                  onClick={() => {
+                    onNavigate('ride-history')
+                    setShowUserMenu(false)
+                  }}
+                >
+                  <HistoryIcon size={16} />
+                  <span>History</span>
+                </button>
+                
+                <button
+                  className="dropdown-item"
+                  onClick={() => {
+                    onNavigate('profile')
+                    setShowUserMenu(false)
+                  }}
+                >
+                  <ProfileIcon size={16} />
+                  <span>Profile</span>
                 </button>
               </div>
-            )}
-          </div>
+              
+              <div className="dropdown-divider"></div>
+              
+              <button
+                className="dropdown-item logout"
+                onClick={() => {
+                  onLogout()
+                  setShowUserMenu(false)
+                }}
+              >
+                <LogoutIcon size={16} />
+                <span>Logout</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </header>

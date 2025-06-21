@@ -2,16 +2,13 @@ import { useState, useEffect } from 'react'
 import './App.css'
 import Login from './components/Login'
 import Header from './components/Header'
-import MapFirstView from './components/MapFirstView'
+import LiveCityMap from './components/LiveCityMap'
 import RiderFlow from './components/RiderFlow'
 import PassengerFlow from './components/PassengerFlow'
 import RideHistory from './components/RideHistory'
 import ActiveRides from './components/ActiveRides'
 import Profile from './components/Profile'
 import LoadingSkeleton from './components/LoadingSkeleton'
-import TransportModeSelector from './components/TransportModeSelector'
-import PublicTransitMap from './components/PublicTransitMap'
-import InteractiveCityMap from './components/InteractiveCityMap'
 import { TransportProvider, useTransport } from './contexts/TransportContext'
 import { CarIcon } from './components/Icons'
 
@@ -21,10 +18,9 @@ function AppContent() {
   const [userRole, setUserRole] = useState('')
   const [journeyData, setJourneyData] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [showTransportSelector, setShowTransportSelector] = useState(false)
-  const [showInteractiveMap, setShowInteractiveMap] = useState(false)
+  const [activeScenario, setActiveScenario] = useState(null)
   
-  const { selectedTransportType, isRideSharing, isPublicTransport, resetTransportSelection } = useTransport()
+  const { resetTransportSelection } = useTransport()
 
   // Check for stored user on app load
   useEffect(() => {
@@ -55,7 +51,7 @@ function AppContent() {
     setCurrentView(view)
     if (view === 'home') {
       setUserRole('')
-      setShowTransportSelector(false)
+      setActiveScenario(null)
     }
   }
 
@@ -99,31 +95,16 @@ function AppContent() {
     setUserRole('')
     setJourneyData(null)
     setCurrentView('home')
-    setShowTransportSelector(false)
+    setActiveScenario(null)
   }
 
-  const handleTransportModeChange = (transportType) => {
-    setShowTransportSelector(false)
-    // If it's ride sharing, show the existing map view
-    // If it's public transport, we could show a different interface
+  const handleScenarioSelect = (scenario) => {
+    console.log('Scenario selected:', scenario)
+    setActiveScenario(scenario)
   }
 
-  const handleChangeTransport = () => {
-    // Reset the current transport selection
-    resetTransportSelection()
-    // Show the transport selector
-    setShowTransportSelector(true)
-  }
-
-  const handleInteractiveMapToggle = () => {
-    setShowInteractiveMap(!showInteractiveMap)
-  }
-
-  const handlePrioritySelect = (priority) => {
-    console.log('Priority selected:', priority)
-    // Here we could transition to the appropriate transport flow
-    // For now, just exit interactive map mode
-    setShowInteractiveMap(false)
+  const handleScenarioComplete = () => {
+    setActiveScenario(null)
   }
 
   if (isLoading) {
@@ -153,31 +134,8 @@ function AppContent() {
   }
 
   const renderContent = () => {
-    // Show interactive city map if requested
-    if (showInteractiveMap) {
-      return (
-        <InteractiveCityMap
-          user={user}
-          onPrioritySelect={handlePrioritySelect}
-          onTransportSelect={(transport) => {
-            console.log('Transport selected:', transport)
-            setShowInteractiveMap(false)
-          }}
-        />
-      );
-    }
-
-    // Show transport selector if requested and no transport mode selected
-    if (showTransportSelector || (!selectedTransportType && currentView === 'home' && !userRole)) {
-      return (
-        <TransportModeSelector 
-          onModeChange={handleTransportModeChange}
-        />
-      );
-    }
-
+    // Handle specific user role flows (preserve existing functionality)
     if (userRole) {
-      // Show ride flows when a role is selected
       if (userRole === 'rider') {
         return <RiderFlow user={user} journeyData={journeyData} />;
       }
@@ -196,25 +154,16 @@ function AppContent() {
         return <Profile user={user} onLogout={handleLogout} />;
       case 'home':
       default:
-        // If public transport is selected, show the transit map
-        if (isPublicTransport) {
-          return (
-            <PublicTransitMap 
-              user={user}
-              onNavigate={handleNavigate}
-            />
-          );
-        }
-        
-        // Default to ride-sharing map view
+        // Always show live city map as primary interface
         return (
-          <MapFirstView 
+          <LiveCityMap 
             user={user} 
+            activeScenario={activeScenario}
+            onScenarioSelect={handleScenarioSelect}
+            onScenarioComplete={handleScenarioComplete}
             onRideRequest={handleRideRequest}
             onRideOffer={handleRideOffer}
             journeyData={journeyData}
-            onChangeTransport={handleChangeTransport}
-            onInteractiveMapToggle={handleInteractiveMapToggle}
           />
         );
     }
@@ -226,12 +175,8 @@ function AppContent() {
         user={user}
         currentView={currentView}
         userRole={userRole}
-        journeyData={journeyData}
         onNavigate={handleNavigate}
-        onGoBack={handleGoBack}
         onLogout={handleLogout}
-        selectedTransportType={selectedTransportType}
-        onChangeTransport={handleChangeTransport}
       />
       
       <main>

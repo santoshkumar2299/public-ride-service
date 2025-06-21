@@ -73,6 +73,15 @@ export const TransportProvider = ({ children }) => {
       setError(errorMessage);
       console.error('❌ Error fetching transport types:', err);
       console.error('❌ API_BASE:', API_BASE);
+      
+      // Fallback to mock data when API is unavailable
+      console.log('🔄 Using fallback mock data...');
+      setTransportTypes([
+        { id: 1, name: 'Bus', icon: '🚌', color: '#007bff' },
+        { id: 2, name: 'Auto', icon: '🛺', color: '#28a745' },
+        { id: 3, name: 'Taxi', icon: '🚗', color: '#ffc107' },
+        { id: 4, name: 'Metro', icon: '🚇', color: '#6f42c1' }
+      ]);
     } finally {
       setLoading(false);
     }
