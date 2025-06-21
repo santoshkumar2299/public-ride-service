@@ -331,7 +331,9 @@ function LiveCityMap({
         <div className="status-card">
           <span className="status-icon">📍</span>
           <span className="status-text">
-            {isDetectingCity ? "Detecting location..." : 
+            {isDetectingViewport ? "Detecting city..." :
+             isDetectingCity ? "Detecting location..." : 
+             viewportCity ? `Exploring ${viewportCity}` :
              userLocation ? 
                (currentCity ? `Exploring ${currentCity}` : "Location detected") : 
                (currentCity ? `Exploring ${currentCity}` : "Using default location")
