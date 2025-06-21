@@ -8,6 +8,7 @@ import ShareRideModal from './scenarios/ShareRideModal';
 import SpotTransportModal from './scenarios/SpotTransportModal';
 import ExploreOptionsModal from './scenarios/ExploreOptionsModal';
 import CommunityHelpModal from './scenarios/CommunityHelpModal';
+import QuickTravelModal from './QuickTravelModal';
 import { config } from '../config/env';
 
 function LiveCityMap({ 
@@ -28,6 +29,8 @@ function LiveCityMap({
   const [viewportCity, setViewportCity] = useState(null);
   const [isDetectingViewport, setIsDetectingViewport] = useState(false);
   const [viewportCenter, setViewportCenter] = useState(null);
+  const [showQuickTravelModal, setShowQuickTravelModal] = useState(false);
+  const [editLocationCoords, setEditLocationCoords] = useState(null);
 
   // Function to reverse geocode and extract city name
   const detectCityName = async (lat, lng) => {
@@ -310,6 +313,27 @@ function LiveCityMap({
     setViewportCenter([center.lat, center.lng]);
   };
 
+  // Handle edit location from pin context menu
+  const handleEditLocation = (coordinates) => {
+    setEditLocationCoords(coordinates);
+    setShowQuickTravelModal(true);
+  };
+
+  // Handle travel to selected location
+  const handleTravelTo = (location) => {
+    console.log('Traveling to:', location);
+    // Update map center to travel to the location
+    setMapCenter([location.lat, location.lng]);
+    setMapZoom(14); // Zoom in to the new location
+    
+    // Update city detection for the new location
+    detectViewportCity(location.lat, location.lng);
+    
+    // Close modal
+    setShowQuickTravelModal(false);
+    setEditLocationCoords(null);
+  };
+
   return (
     <div className="interactive-city-map">
       {/* Full Screen Map with Pinning */}
@@ -325,6 +349,7 @@ function LiveCityMap({
           onFindRouteToLocation={handleFindRoute}
           onAddToFavorites={handleAddToFavorites}
           onMapMove={handleMapMove}
+          onEditLocation={handleEditLocation}
         />
       </div>
       
