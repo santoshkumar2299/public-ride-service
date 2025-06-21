@@ -99,6 +99,12 @@ const TransportModeSelector = ({ onModeChange }) => {
             {selectedTransportType.name} Selected
           </h4>
           <p>{selectedTransportType.description}</p>
+          <button 
+            className="change-selection-btn"
+            onClick={() => selectTransportType(null)}
+          >
+            Choose Different Mode
+          </button>
         </div>
       )}
     </div>

@@ -66,12 +66,8 @@ export const TransportProvider = ({ children }) => {
       
       setTransportTypes(data.transport_types || []);
       
-      // Auto-select bus as default
-      const busType = data.transport_types?.find(type => type.name.toLowerCase() === 'bus');
-      if (busType && !selectedTransportType) {
-        console.log('🎯 Auto-selecting bus type:', busType);
-        setSelectedTransportType(busType);
-      }
+      // Don't auto-select - let user choose their transport mode
+      console.log('🎯 Transport types loaded, waiting for user selection');
     } catch (err) {
       const errorMessage = `Failed to load transport types: ${err.message}`;
       setError(errorMessage);
