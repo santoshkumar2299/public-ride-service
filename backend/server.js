@@ -763,7 +763,7 @@ app.get('/api/search/bus-number', async (req, res) => {
   }
 });
 
-// Search by route name
+// Search by route name with smart matching
 app.get('/api/search/route', async (req, res) => {
   try {
     const { query, lat, lng, radius = 5 } = req.query;
@@ -772,9 +772,55 @@ app.get('/api/search/route', async (req, res) => {
       return res.status(400).json({ error: 'query parameter required' });
     }
 
-    let distanceClause = '';
-    let params = [`%${query}%`, `%${query}%`];
+    // Smart query processing - handle common variations
+    const normalizedQuery = query.toLowerCase().trim();
     
+    // Extract keywords for flexible matching
+    const keywords = normalizedQuery.split(/[\s,\-→]+/).filter(k => k.length > 2);
+    
+    // Build flexible search conditions
+    let searchConditions = [];
+    let params = [];
+    
+    // Exact phrase match (highest priority)
+    searchConditions.push(`(r.route_name LIKE ? OR r.start_point LIKE ? OR r.end_point LIKE ?)`);
+    params.push(`%${query}%`, `%${query}%`, `%${query}%`);
+    
+    // Keyword-based matching for flexible search
+    if (keywords.length > 0) {
+      const keywordConditions = keywords.map(keyword => {
+        params.push(`%${keyword}%`, `%${keyword}%`, `%${keyword}%`);
+        return `(r.route_name LIKE ? OR r.start_point LIKE ? OR r.end_point LIKE ?)`;
+      }).join(' OR ');
+      
+      searchConditions.push(`(${keywordConditions})`);
+    }
+    
+    // Handle common abbreviations and variations
+    const abbreviations = {
+      'hitec': 'HITEC City',
+      'hitech': 'HITEC City', 
+      'hi-tech': 'HITEC City',
+      'jh': 'Jubilee Hills',
+      'jubilee': 'Jubilee Hills',
+      'sec': 'Secunderabad',
+      'secbad': 'Secunderabad',
+      'ameerpet': 'Ameerpet',
+      'gachi': 'Gachibowli',
+      'madhapur': 'Madhapur',
+      'kukatpally': 'Kukatpally',
+      'begumpet': 'Begumpet'
+    };
+    
+    // Add abbreviation matches
+    Object.entries(abbreviations).forEach(([abbrev, full]) => {
+      if (normalizedQuery.includes(abbrev)) {
+        searchConditions.push(`(r.route_name LIKE ? OR r.start_point LIKE ? OR r.end_point LIKE ?)`);
+        params.push(`%${full}%`, `%${full}%`, `%${full}%`);
+      }
+    });
+
+    let distanceClause = '';
     if (lat && lng) {
       distanceClause = `
         AND (
@@ -805,14 +851,20 @@ app.get('/api/search/route', async (req, res) => {
               sin(radians(?)) * sin(radians(t.current_lat))
             )
           ELSE NULL END
-        ) as distance
+        ) as distance,
+        CASE 
+          WHEN r.route_name LIKE ? THEN 1
+          WHEN r.start_point LIKE ? OR r.end_point LIKE ? THEN 2
+          ELSE 3
+        END as relevance_score
       FROM transport_routes r
       LEFT JOIN live_tracking t ON r.id = t.route_id AND t.is_active = 1
-      WHERE (r.route_name LIKE ? OR r.start_point LIKE ? OR r.end_point LIKE ?)
+      WHERE (${searchConditions.join(' OR ')})
         ${distanceClause}
       GROUP BY r.id, r.route_number, r.route_name
       HAVING buses_count > 0
       ORDER BY 
+        relevance_score ASC,
         CASE WHEN ? IS NOT NULL THEN distance END ASC,
         buses_count DESC,
         r.route_name ASC
@@ -821,7 +873,8 @@ app.get('/api/search/route', async (req, res) => {
 
     const searchParams = [
       lat, lng, lat, lng, lat, // For distance calculation in SELECT
-      ...params, `%${query}%`, // Main query params  
+      `%${query}%`, `%${query}%`, `%${query}%`, // For relevance scoring
+      ...params, // All search conditions params
       lat // For ORDER BY distance
     ];
 
@@ -836,6 +889,7 @@ app.get('/api/search/route', async (req, res) => {
         subtitle: `Bus ${row.route_number} • ${row.start_point} → ${row.end_point}`,
         buses_count: row.buses_count,
         distance: row.distance,
+        relevance_score: row.relevance_score,
         route_bounds: row.center_lat && row.center_lng ? {
           center_lat: row.center_lat,
           center_lng: row.center_lng

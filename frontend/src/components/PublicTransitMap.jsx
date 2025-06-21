@@ -362,7 +362,7 @@ const PublicTransitMap = ({ user, onNavigate }) => {
       case 'bus-number':
         return 'Enter bus number (e.g., 185G, 102, 49M)...';
       case 'route':
-        return 'Enter route name (e.g., Jubilee Hills - HITEC City)...';
+        return 'Enter any route keywords (e.g., jubilee hitec, JH to HITEC)...';
       case 'destination':
         return 'Enter destination (e.g., HITEC City, Begumpet)...';
       default:
@@ -430,7 +430,7 @@ const PublicTransitMap = ({ user, onNavigate }) => {
               <p>💡 Search for buses by their painted number (e.g., 185G for Jubilee Hills to HITEC City)</p>
             )}
             {searchType === 'route' && (
-              <p>💡 Search by the complete route description (e.g., "Jubilee Hills - HITEC City")</p>
+              <p>💡 Smart search understands: "Jubilee Hills HITEC City", "JH to hitech", "jubilee hitec", etc.</p>
             )}
             {searchType === 'destination' && (
               <p>💡 Search for buses going to specific places (e.g., "HITEC City", "Begumpet", "Charminar")</p>
