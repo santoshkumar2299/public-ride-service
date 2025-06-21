@@ -20,8 +20,8 @@ export const TransportProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Base API URL
-  const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+  // Base API URL (Vite uses VITE_ prefix instead of REACT_APP_)
+  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
   // Fetch all transport types on component mount
   useEffect(() => {
