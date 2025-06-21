@@ -132,6 +132,7 @@ function MapWithPinning({
         showControls={showControls}
         onMapClick={handleMapClick}
         onZoomChange={onZoomChange}
+        onMapMove={onMapMove}
       />
       
       <MapPinContextMenu
