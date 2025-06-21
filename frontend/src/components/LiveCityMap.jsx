@@ -25,6 +25,8 @@ function LiveCityMap({
   const [mapZoom, setMapZoom] = useState(12);
   const [currentCity, setCurrentCity] = useState(null);
   const [isDetectingCity, setIsDetectingCity] = useState(false);
+  const [viewportCity, setViewportCity] = useState(null);
+  const [isDetectingViewport, setIsDetectingViewport] = useState(false);
 
   // Function to reverse geocode and extract city name
   const detectCityName = async (lat, lng) => {
@@ -70,6 +72,70 @@ function LiveCityMap({
       setIsDetectingCity(false);
     }
   };
+
+  // Function to detect city in current map viewport
+  const detectViewportCity = async (lat, lng) => {
+    setIsDetectingViewport(true);
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?` + 
+        new URLSearchParams({
+          lat: lat.toString(),
+          lon: lng.toString(),
+          format: 'json',
+          addressdetails: '1',
+          'accept-language': 'en'
+        }),
+        {
+          headers: {
+            'User-Agent': 'RideShareMVP/1.0'
+          }
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        const address = data.address || {};
+        
+        // Extract city name from address components
+        const city = address.city || 
+                    address.town || 
+                    address.village || 
+                    address.municipality ||
+                    address.county ||
+                    address.state_district ||
+                    address.state ||
+                    null;
+        
+        if (city && city !== viewportCity) {
+          setViewportCity(city);
+        }
+      }
+    } catch (error) {
+      console.error('Viewport city detection error:', error);
+    } finally {
+      setIsDetectingViewport(false);
+    }
+  };
+
+  // Debounced viewport city detection
+  useEffect(() => {
+    let timeoutId;
+    
+    const debouncedDetectViewport = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        detectViewportCity(mapCenter[0], mapCenter[1]);
+      }, 1000); // Wait 1 second after user stops moving
+    };
+
+    // Only detect if map center has changed
+    if (mapCenter && mapCenter[0] && mapCenter[1]) {
+      debouncedDetectViewport();
+    }
+
+    return () => clearTimeout(timeoutId);
+  }, [mapCenter, viewportCity]);
 
   // Auto-detect user location on mount
   useEffect(() => {
@@ -237,6 +303,11 @@ function LiveCityMap({
     // Add to user's saved locations
   };
 
+  // Handle map movement to update center coordinates
+  const handleMapMove = (center) => {
+    setMapCenter([center.lat, center.lng]);
+  };
+
   return (
     <div className="interactive-city-map">
       {/* Full Screen Map with Pinning */}
@@ -251,6 +322,7 @@ function LiveCityMap({
           onStartFromLocation={handleStartFromLocation}
           onFindRouteToLocation={handleFindRoute}
           onAddToFavorites={handleAddToFavorites}
+          onMapMove={handleMapMove}
         />
       </div>
       
