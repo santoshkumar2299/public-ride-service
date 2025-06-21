@@ -356,6 +356,20 @@ const PublicTransitMap = ({ user, onNavigate }) => {
     setMapZoom(Math.min(mapZoom + 2, 18));
   };
 
+  // Get appropriate placeholder text for search input
+  const getSearchPlaceholder = () => {
+    switch (searchType) {
+      case 'bus-number':
+        return 'Enter bus number (e.g., 185G, 102, 49M)...';
+      case 'route':
+        return 'Enter route name (e.g., Jubilee Hills - HITEC City)...';
+      case 'destination':
+        return 'Enter destination (e.g., HITEC City, Begumpet)...';
+      default:
+        return 'Search...';
+    }
+  };
+
   if (!selectedTransportType || selectedTransportType.name === 'Ride Sharing') {
     return (
       <div className="public-transit-map">
@@ -379,14 +393,14 @@ const PublicTransitMap = ({ user, onNavigate }) => {
               onChange={(e) => setSearchType(e.target.value)}
               className="search-type-selector"
             >
-              <option value="bus-number">Bus Number</option>
-              <option value="route">Route</option>
-              <option value="destination">Destination</option>
+              <option value="bus-number">Bus Number (e.g., 185G, 102, 49M)</option>
+              <option value="route">Route Name (e.g., Jubilee Hills - HITEC City)</option>
+              <option value="destination">Destination (e.g., HITEC City, Begumpet)</option>
             </select>
             <div className="search-input-container">
               <input
                 type="text"
-                placeholder={`Search by ${searchType.replace('-', ' ')}...`}
+                placeholder={getSearchPlaceholder()}
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
@@ -408,6 +422,19 @@ const PublicTransitMap = ({ user, onNavigate }) => {
                 </button>
               )}
             </div>
+          </div>
+          
+          {/* Search Help Text */}
+          <div className="search-help">
+            {searchType === 'bus-number' && (
+              <p>💡 Search for buses by their painted number (e.g., 185G for Jubilee Hills to HITEC City)</p>
+            )}
+            {searchType === 'route' && (
+              <p>💡 Search by the complete route description (e.g., "Jubilee Hills - HITEC City")</p>
+            )}
+            {searchType === 'destination' && (
+              <p>💡 Search for buses going to specific places (e.g., "HITEC City", "Begumpet", "Charminar")</p>
+            )}
           </div>
         </div>
 

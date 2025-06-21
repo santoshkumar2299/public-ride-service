@@ -70,8 +70,9 @@
   color: var(--text-primary);
   font-weight: 500;
   cursor: pointer;
-  min-width: 120px;
+  min-width: 200px;
   transition: border-color 0.2s ease;
+  font-size: 0.875rem;
 }
 
 .search-type-selector:focus {
@@ -122,6 +123,20 @@
 .clear-search:hover {
   background: rgba(0, 0, 0, 0.1);
   color: var(--text-primary);
+}
+
+/* Search Help Text */
+.search-help {
+  padding: var(--space-sm) var(--space-md);
+  background: rgba(233, 30, 99, 0.05);
+  border-top: 1px solid rgba(233, 30, 99, 0.1);
+}
+
+.search-help p {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-style: italic;
 }
 
 /* Search Results */
@@ -424,6 +439,8 @@
 
   .search-type-selector {
     width: 100%;
+    min-width: 100%;
+    font-size: 0.8rem;
   }
 
   .search-results {
