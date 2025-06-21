@@ -1208,6 +1208,407 @@ app.post('/api/reports/bus-spots/:id/verify', async (req, res) => {
   }
 });
 
+// HUMANITY CREDITS AND BUS STOP HELPER ENDPOINTS
+
+// Start helping at a bus stop
+app.post('/api/bus-stop/start-helping', async (req, res) => {
+  try {
+    const { user_id, bus_stop_name, bus_stop_lat, bus_stop_lng, waiting_for_buses } = req.body;
+    
+    if (!user_id || !bus_stop_name || !bus_stop_lat || !bus_stop_lng) {
+      return res.status(400).json({ error: 'Required fields missing' });
+    }
+
+    const waitingBusesJson = JSON.stringify(waiting_for_buses || []);
+
+    db.run(
+      `INSERT INTO bus_stop_helpers (user_id, bus_stop_name, bus_stop_lat, bus_stop_lng, waiting_for_buses)
+       VALUES (?, ?, ?, ?, ?)`,
+      [user_id, bus_stop_name, bus_stop_lat, bus_stop_lng, waitingBusesJson],
+      function(err) {
+        if (err) {
+          console.error('Error starting bus stop help:', err);
+          return res.status(500).json({ error: 'Failed to start helping session' });
+        }
+
+        res.json({ 
+          message: 'Started helping at bus stop',
+          helper_id: this.lastID
+        });
+      }
+    );
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Post bus arrival update
+app.post('/api/bus-stop/arrival-update', async (req, res) => {
+  try {
+    const { 
+      helper_id, 
+      bus_number, 
+      route_id, 
+      estimated_arrival_minutes, 
+      confidence_level,
+      update_method,
+      additional_info 
+    } = req.body;
+    
+    if (!helper_id || !bus_number || estimated_arrival_minutes === undefined) {
+      return res.status(400).json({ error: 'Required fields missing' });
+    }
+
+    db.run(
+      `INSERT INTO bus_stop_arrival_updates 
+       (helper_id, bus_number, route_id, estimated_arrival_minutes, confidence_level, update_method, additional_info)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [helper_id, bus_number, route_id, estimated_arrival_minutes, confidence_level || 'medium', update_method || 'visual_sighting', additional_info],
+      function(err) {
+        if (err) {
+          console.error('Error posting arrival update:', err);
+          return res.status(500).json({ error: 'Failed to post arrival update' });
+        }
+
+        res.json({ 
+          message: 'Arrival update posted',
+          update_id: this.lastID
+        });
+      }
+    );
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get active helpers at nearby bus stops
+app.get('/api/bus-stop/nearby-helpers', async (req, res) => {
+  try {
+    const { lat, lng, radius = 0.5 } = req.query; // 500m default radius
+    
+    if (!lat || !lng) {
+      return res.status(400).json({ error: 'lat and lng parameters required' });
+    }
+
+    const sql = `
+      SELECT 
+        h.*,
+        u.username as helper_name,
+        hs.helper_level,
+        hs.average_rating,
+        hs.total_people_helped,
+        (
+          6371 * acos(
+            cos(radians(?)) * cos(radians(h.bus_stop_lat)) * 
+            cos(radians(h.bus_stop_lng) - radians(?)) + 
+            sin(radians(?)) * sin(radians(h.bus_stop_lat))
+          )
+        ) as distance
+      FROM bus_stop_helpers h
+      JOIN users u ON h.user_id = u.id
+      LEFT JOIN user_humanity_scores hs ON h.user_id = hs.user_id
+      WHERE h.is_active = 1
+        AND (
+          6371 * acos(
+            cos(radians(?)) * cos(radians(h.bus_stop_lat)) * 
+            cos(radians(h.bus_stop_lng) - radians(?)) + 
+            sin(radians(?)) * sin(radians(h.bus_stop_lat))
+          )
+        ) <= ?
+      ORDER BY distance ASC
+      LIMIT 20
+    `;
+
+    db.all(sql, [lat, lng, lat, lat, lng, lat, radius], (err, rows) => {
+      if (err) {
+        console.error('Error fetching nearby helpers:', err);
+        return res.status(500).json({ error: 'Failed to fetch helpers' });
+      }
+
+      res.json({ helpers: rows || [] });
+    });
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get recent arrival updates from helpers
+app.get('/api/bus-stop/arrival-updates', async (req, res) => {
+  try {
+    const { bus_number, lat, lng, radius = 2 } = req.query; // 2km default radius
+    
+    if (!lat || !lng) {
+      return res.status(400).json({ error: 'lat and lng parameters required' });
+    }
+
+    let busFilter = '';
+    let params = [lat, lng, lat, lat, lng, lat, radius];
+    
+    if (bus_number) {
+      busFilter = 'AND au.bus_number = ?';
+      params.push(bus_number);
+    }
+
+    const sql = `
+      SELECT 
+        au.*,
+        h.bus_stop_name,
+        h.bus_stop_lat,
+        h.bus_stop_lng,
+        u.username as helper_name,
+        hs.helper_level,
+        hs.average_rating,
+        r.route_name,
+        r.start_point,
+        r.end_point,
+        (
+          6371 * acos(
+            cos(radians(?)) * cos(radians(h.bus_stop_lat)) * 
+            cos(radians(h.bus_stop_lng) - radians(?)) + 
+            sin(radians(?)) * sin(radians(h.bus_stop_lat))
+          )
+        ) as distance,
+        (strftime('%s', 'now') - strftime('%s', au.created_at)) / 60 as minutes_ago
+      FROM bus_stop_arrival_updates au
+      JOIN bus_stop_helpers h ON au.helper_id = h.id
+      JOIN users u ON h.user_id = u.id
+      LEFT JOIN user_humanity_scores hs ON h.user_id = hs.user_id
+      LEFT JOIN transport_routes r ON au.route_id = r.id
+      WHERE h.is_active = 1
+        AND au.created_at > datetime('now', '-1 hour')
+        AND (
+          6371 * acos(
+            cos(radians(?)) * cos(radians(h.bus_stop_lat)) * 
+            cos(radians(h.bus_stop_lng) - radians(?)) + 
+            sin(radians(?)) * sin(radians(h.bus_stop_lat))
+          )
+        ) <= ?
+        ${busFilter}
+      ORDER BY au.created_at DESC
+      LIMIT 50
+    `;
+
+    db.all(sql, params, (err, rows) => {
+      if (err) {
+        console.error('Error fetching arrival updates:', err);
+        return res.status(500).json({ error: 'Failed to fetch arrival updates' });
+      }
+
+      res.json({ updates: rows || [] });
+    });
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Acknowledge helper's assistance
+app.post('/api/humanity-credits/acknowledge', async (req, res) => {
+  try {
+    const { 
+      arrival_update_id, 
+      beneficiary_user_id, 
+      helper_user_id,
+      acknowledgment_type,
+      rating,
+      feedback_message,
+      was_helpful 
+    } = req.body;
+    
+    if (!arrival_update_id || !beneficiary_user_id || !helper_user_id) {
+      return res.status(400).json({ error: 'Required fields missing' });
+    }
+
+    // Calculate credits based on rating and helpfulness
+    const credits_awarded = was_helpful ? Math.max(1, Math.floor(rating / 2)) : 0;
+
+    db.run(
+      `INSERT INTO help_acknowledgments 
+       (arrival_update_id, beneficiary_user_id, helper_user_id, acknowledgment_type, rating, feedback_message, was_helpful, credits_awarded)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [arrival_update_id, beneficiary_user_id, helper_user_id, acknowledgment_type || 'used_info', rating || 5, feedback_message, was_helpful ? 1 : 0, credits_awarded],
+      function(err) {
+        if (err) {
+          console.error('Error recording acknowledgment:', err);
+          return res.status(500).json({ error: 'Failed to record acknowledgment' });
+        }
+
+        // Update helper's statistics
+        if (was_helpful && credits_awarded > 0) {
+          updateHelperCredits(helper_user_id, credits_awarded, rating);
+          updateBeneficiaryCount(arrival_update_id);
+        }
+
+        res.json({ 
+          message: 'Thank you for acknowledging the help!',
+          credits_awarded: credits_awarded,
+          acknowledgment_id: this.lastID
+        });
+      }
+    );
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get user's humanity score and reputation
+app.get('/api/humanity-credits/score/:user_id', async (req, res) => {
+  try {
+    const { user_id } = req.params;
+
+    db.get(
+      `SELECT * FROM user_humanity_scores WHERE user_id = ?`,
+      [user_id],
+      (err, row) => {
+        if (err) {
+          console.error('Error fetching humanity score:', err);
+          return res.status(500).json({ error: 'Failed to fetch score' });
+        }
+
+        if (!row) {
+          // Create initial score record if it doesn't exist
+          db.run(
+            `INSERT INTO user_humanity_scores (user_id) VALUES (?)`,
+            [user_id],
+            function(insertErr) {
+              if (insertErr) {
+                return res.status(500).json({ error: 'Failed to create score record' });
+              }
+              
+              res.json({
+                user_id: user_id,
+                total_credits: 0,
+                total_people_helped: 0,
+                average_rating: 5.0,
+                helper_level: 'bronze',
+                times_helped_others: 0,
+                times_received_help: 0,
+                consecutive_helpful_days: 0,
+                badges_earned: [],
+                reputation_points: 0
+              });
+            }
+          );
+        } else {
+          res.json({
+            ...row,
+            badges_earned: row.badges_earned ? JSON.parse(row.badges_earned) : []
+          });
+        }
+      }
+    );
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get humanity credits leaderboard
+app.get('/api/humanity-credits/leaderboard', async (req, res) => {
+  try {
+    const { period = 'all_time', limit = 50 } = req.query;
+    
+    let timeFilter = '';
+    if (period === 'this_week') {
+      timeFilter = "AND hs.last_help_provided > datetime('now', '-7 days')";
+    } else if (period === 'this_month') {
+      timeFilter = "AND hs.last_help_provided > datetime('now', '-30 days')";
+    }
+
+    const sql = `
+      SELECT 
+        u.username,
+        u.id as user_id,
+        hs.*,
+        COUNT(DISTINCT ha.id) as total_acknowledgments,
+        AVG(ha.rating) as recent_avg_rating
+      FROM user_humanity_scores hs
+      JOIN users u ON hs.user_id = u.id
+      LEFT JOIN help_acknowledgments ha ON hs.user_id = ha.helper_user_id
+        AND ha.acknowledged_at > datetime('now', '-30 days')
+      WHERE hs.total_credits > 0 
+        ${timeFilter}
+      GROUP BY hs.user_id, u.username
+      ORDER BY hs.total_credits DESC, hs.average_rating DESC
+      LIMIT ?
+    `;
+
+    db.all(sql, [limit], (err, rows) => {
+      if (err) {
+        console.error('Error fetching leaderboard:', err);
+        return res.status(500).json({ error: 'Failed to fetch leaderboard' });
+      }
+
+      const leaderboard = rows.map((row, index) => ({
+        rank: index + 1,
+        username: row.username,
+        user_id: row.user_id,
+        total_credits: row.total_credits,
+        total_people_helped: row.total_people_helped,
+        average_rating: row.average_rating,
+        helper_level: row.helper_level,
+        recent_avg_rating: row.recent_avg_rating || row.average_rating,
+        total_acknowledgments: row.total_acknowledgments,
+        badges_earned: row.badges_earned ? JSON.parse(row.badges_earned) : []
+      }));
+
+      res.json({ leaderboard });
+    });
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Helper function to update helper credits
+function updateHelperCredits(helper_user_id, credits_awarded, rating) {
+  db.run(
+    `INSERT OR REPLACE INTO user_humanity_scores 
+     (user_id, total_credits, total_people_helped, average_rating, times_helped_others, last_help_provided, updated_at)
+     VALUES (
+       ?,
+       COALESCE((SELECT total_credits FROM user_humanity_scores WHERE user_id = ?), 0) + ?,
+       COALESCE((SELECT total_people_helped FROM user_humanity_scores WHERE user_id = ?), 0) + 1,
+       CASE 
+         WHEN (SELECT times_helped_others FROM user_humanity_scores WHERE user_id = ?) = 0 THEN ?
+         ELSE (
+           (COALESCE((SELECT average_rating FROM user_humanity_scores WHERE user_id = ?), 5.0) * 
+            COALESCE((SELECT times_helped_others FROM user_humanity_scores WHERE user_id = ?), 0) + ?) /
+           (COALESCE((SELECT times_helped_others FROM user_humanity_scores WHERE user_id = ?), 0) + 1)
+         )
+       END,
+       COALESCE((SELECT times_helped_others FROM user_humanity_scores WHERE user_id = ?), 0) + 1,
+       datetime('now'),
+       datetime('now')
+     )`,
+    [helper_user_id, helper_user_id, credits_awarded, helper_user_id, helper_user_id, rating, helper_user_id, helper_user_id, rating, helper_user_id, helper_user_id],
+    (err) => {
+      if (err) {
+        console.error('Error updating helper credits:', err);
+      }
+    }
+  );
+}
+
+// Helper function to increment beneficiary count for arrival update
+function updateBeneficiaryCount(arrival_update_id) {
+  db.run(
+    `UPDATE bus_stop_arrival_updates 
+     SET beneficiaries_count = beneficiaries_count + 1 
+     WHERE id = ?`,
+    [arrival_update_id],
+    (err) => {
+      if (err) {
+        console.error('Error updating beneficiary count:', err);
+      }
+    }
+  );
+}
+
 initDB();
 
 app.listen(PORT, () => {
