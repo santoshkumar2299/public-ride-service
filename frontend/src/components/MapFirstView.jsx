@@ -8,7 +8,8 @@ function MapFirstView({
   onRideRequest, 
   onRideOffer,
   user,
-  journeyData = null 
+  journeyData = null,
+  onInteractiveMapToggle
 }) {
   const deviceInfo = useDeviceDetection();
   const [pickup, setPickup] = useState(
@@ -364,6 +365,20 @@ function MapFirstView({
           </div>
           
           <div className="compact-ride-options">
+            {onInteractiveMapToggle && (
+              <button 
+                className="compact-ride-btn interactive-map-compact"
+                onClick={onInteractiveMapToggle}
+                style={{
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  color: 'white'
+                }}
+              >
+                <span style={{ fontSize: '16px' }}>💡</span>
+                <span>Priority Mode</span>
+              </button>
+            )}
+            
             {onRideRequest && (
               <button 
                 className="compact-ride-btn passenger-compact"

@@ -11,6 +11,7 @@ import Profile from './components/Profile'
 import LoadingSkeleton from './components/LoadingSkeleton'
 import TransportModeSelector from './components/TransportModeSelector'
 import PublicTransitMap from './components/PublicTransitMap'
+import InteractiveCityMap from './components/InteractiveCityMap'
 import { TransportProvider, useTransport } from './contexts/TransportContext'
 import { CarIcon } from './components/Icons'
 
@@ -21,8 +22,9 @@ function AppContent() {
   const [journeyData, setJourneyData] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [showTransportSelector, setShowTransportSelector] = useState(false)
+  const [showInteractiveMap, setShowInteractiveMap] = useState(false)
   
-  const { selectedTransportType, isRideSharing, isPublicTransport } = useTransport()
+  const { selectedTransportType, isRideSharing, isPublicTransport, resetTransportSelection } = useTransport()
 
   // Check for stored user on app load
   useEffect(() => {
@@ -106,6 +108,24 @@ function AppContent() {
     // If it's public transport, we could show a different interface
   }
 
+  const handleChangeTransport = () => {
+    // Reset the current transport selection
+    resetTransportSelection()
+    // Show the transport selector
+    setShowTransportSelector(true)
+  }
+
+  const handleInteractiveMapToggle = () => {
+    setShowInteractiveMap(!showInteractiveMap)
+  }
+
+  const handlePrioritySelect = (priority) => {
+    console.log('Priority selected:', priority)
+    // Here we could transition to the appropriate transport flow
+    // For now, just exit interactive map mode
+    setShowInteractiveMap(false)
+  }
+
   if (isLoading) {
     return (
       <div className="app">
@@ -133,6 +153,20 @@ function AppContent() {
   }
 
   const renderContent = () => {
+    // Show interactive city map if requested
+    if (showInteractiveMap) {
+      return (
+        <InteractiveCityMap
+          user={user}
+          onPrioritySelect={handlePrioritySelect}
+          onTransportSelect={(transport) => {
+            console.log('Transport selected:', transport)
+            setShowInteractiveMap(false)
+          }}
+        />
+      );
+    }
+
     // Show transport selector if requested and no transport mode selected
     if (showTransportSelector || (!selectedTransportType && currentView === 'home' && !userRole)) {
       return (
@@ -179,7 +213,8 @@ function AppContent() {
             onRideRequest={handleRideRequest}
             onRideOffer={handleRideOffer}
             journeyData={journeyData}
-            onChangeTransport={() => setShowTransportSelector(true)}
+            onChangeTransport={handleChangeTransport}
+            onInteractiveMapToggle={handleInteractiveMapToggle}
           />
         );
     }
@@ -196,7 +231,7 @@ function AppContent() {
         onGoBack={handleGoBack}
         onLogout={handleLogout}
         selectedTransportType={selectedTransportType}
-        onChangeTransport={() => setShowTransportSelector(true)}
+        onChangeTransport={handleChangeTransport}
       />
       
       <main>

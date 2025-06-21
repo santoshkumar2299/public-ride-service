@@ -1045,7 +1045,8 @@ app.post('/api/reports/bus-spot', upload.single('photo'), async (req, res) => {
       confidence, 
       additional_info, 
       user_id, 
-      timestamp 
+      timestamp,
+      bus_status 
     } = req.body;
     
     if (!bus_number || !location || !user_id) {
@@ -1061,12 +1062,22 @@ app.post('/api/reports/bus-spot', upload.single('photo'), async (req, res) => {
       photoPath = req.file.filename; // Store relative path
     }
 
+    // Process bus status data
+    let busStatusData = null;
+    if (bus_status) {
+      try {
+        busStatusData = typeof bus_status === 'string' ? bus_status : JSON.stringify(bus_status);
+      } catch (error) {
+        console.error('Error processing bus status:', error);
+      }
+    }
+
     // Insert bus spot report
     const spotReportSql = `
       INSERT INTO bus_spot_reports (
         user_id, bus_number, route_id, latitude, longitude, 
-        confidence_level, additional_info, photo_path, reported_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        confidence_level, additional_info, photo_path, bus_status, reported_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     db.run(spotReportSql, [
@@ -1078,6 +1089,7 @@ app.post('/api/reports/bus-spot', upload.single('photo'), async (req, res) => {
       confidence || 'medium',
       additional_info || null,
       photoPath,
+      busStatusData,
       timestamp || new Date().toISOString()
     ], function(err) {
       if (err) {

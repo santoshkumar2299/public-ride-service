@@ -1,6 +1,13 @@
-# Public Ride Share MVP
+# Public Ride Service Platform
 
-A simple ride-sharing application that matches drivers (riders) with passengers going in the same direction.
+A comprehensive transport coordination platform that helps users find, share, and track various modes of transportation in real-time, with community-driven features and social scoring.
+
+## 🚀 Current Status: Phase 4 - Scenario-Driven Design
+**Latest Update:** 2025-01-21 - Moving from transport-mode-first to user-scenario-first approach
+
+📚 **Full Documentation:**
+- [Product Evolution & Changelog](./PRODUCT_EVOLUTION.md) - Complete history of design iterations
+- [Implementation Plan](./IMPLEMENTATION_PLAN.md) - Current development roadmap
 
 ## Tech Stack
 

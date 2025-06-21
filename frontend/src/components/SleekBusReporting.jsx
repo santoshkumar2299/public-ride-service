@@ -18,6 +18,18 @@ const SleekBusReporting = ({ user, currentLocation, onReport }) => {
   const [attachedPhoto, setAttachedPhoto] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
   
+  // Bus Status/Condition States
+  const [busStatus, setBusStatus] = useState({
+    crowdLevel: '',      // empty, comfortable, crowded, packed
+    busCondition: '',    // excellent, good, average, poor
+    cleanliness: '',     // very_clean, clean, average, dirty
+    speed: '',           // fast, normal, slow, very_slow
+    temperature: '',     // cool, comfortable, warm, hot
+    driverBehavior: '',  // excellent, good, average, poor
+    accessibility: '',   // fully_accessible, partially_accessible, not_accessible
+    onTime: ''           // early, on_time, slightly_late, very_late
+  });
+  
   // Refs
   const containerRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -155,6 +167,9 @@ const SleekBusReporting = ({ user, currentLocation, onReport }) => {
       formData.append('user_id', user.id);
       formData.append('timestamp', new Date().toISOString());
       
+      // Bus status/condition data
+      formData.append('bus_status', JSON.stringify(busStatus));
+      
       // Attach photo if present
       if (attachedPhoto) {
         formData.append('photo', attachedPhoto);
@@ -169,6 +184,14 @@ const SleekBusReporting = ({ user, currentLocation, onReport }) => {
     }
   };
 
+  // Handle bus status change
+  const handleStatusChange = (category, value) => {
+    setBusStatus(prev => ({
+      ...prev,
+      [category]: prev[category] === value ? '' : value // Toggle if same value
+    }));
+  };
+
   // Reset form and close
   const handleClose = () => {
     setIsExpanded(false);
@@ -177,6 +200,16 @@ const SleekBusReporting = ({ user, currentLocation, onReport }) => {
     setSelectedRoute(null);
     setConfidence('high');
     setAdditionalInfo('');
+    setBusStatus({
+      crowdLevel: '',
+      busCondition: '',
+      cleanliness: '',
+      speed: '',
+      temperature: '',
+      driverBehavior: '',
+      accessibility: '',
+      onTime: ''
+    });
     removePhoto();
   };
 
@@ -350,6 +383,130 @@ const SleekBusReporting = ({ user, currentLocation, onReport }) => {
             </div>
           </div>
 
+          {/* Bus Status/Condition (for traveling mode) */}
+          {selectedAction === 'traveling' && (
+            <div className="input-group">
+              <label>🚌 Bus Status (Optional but Helpful!)</label>
+              <div className="status-categories">
+                
+                {/* Crowd Level */}
+                <div className="status-category">
+                  <span className="category-label">👥 Crowd Level</span>
+                  <div className="status-options">
+                    {[
+                      { value: 'empty', emoji: '😌', label: 'Empty' },
+                      { value: 'comfortable', emoji: '😊', label: 'Comfortable' },
+                      { value: 'crowded', emoji: '😐', label: 'Crowded' },
+                      { value: 'packed', emoji: '😵', label: 'Packed' }
+                    ].map(({ value, emoji, label }) => (
+                      <button
+                        key={value}
+                        className={`status-btn ${busStatus.crowdLevel === value ? 'selected' : ''}`}
+                        onClick={() => handleStatusChange('crowdLevel', value)}
+                        type="button"
+                      >
+                        <span>{emoji}</span>
+                        <span>{label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Speed */}
+                <div className="status-category">
+                  <span className="category-label">⚡ Speed</span>
+                  <div className="status-options">
+                    {[
+                      { value: 'fast', emoji: '🏃', label: 'Fast' },
+                      { value: 'normal', emoji: '🚶', label: 'Normal' },
+                      { value: 'slow', emoji: '🐌', label: 'Slow' },
+                      { value: 'very_slow', emoji: '🦥', label: 'Very Slow' }
+                    ].map(({ value, emoji, label }) => (
+                      <button
+                        key={value}
+                        className={`status-btn ${busStatus.speed === value ? 'selected' : ''}`}
+                        onClick={() => handleStatusChange('speed', value)}
+                        type="button"
+                      >
+                        <span>{emoji}</span>
+                        <span>{label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Cleanliness */}
+                <div className="status-category">
+                  <span className="category-label">🧽 Cleanliness</span>
+                  <div className="status-options">
+                    {[
+                      { value: 'very_clean', emoji: '✨', label: 'Very Clean' },
+                      { value: 'clean', emoji: '😊', label: 'Clean' },
+                      { value: 'average', emoji: '😐', label: 'Average' },
+                      { value: 'dirty', emoji: '🤢', label: 'Dirty' }
+                    ].map(({ value, emoji, label }) => (
+                      <button
+                        key={value}
+                        className={`status-btn ${busStatus.cleanliness === value ? 'selected' : ''}`}
+                        onClick={() => handleStatusChange('cleanliness', value)}
+                        type="button"
+                      >
+                        <span>{emoji}</span>
+                        <span>{label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Temperature */}
+                <div className="status-category">
+                  <span className="category-label">🌡️ Temperature</span>
+                  <div className="status-options">
+                    {[
+                      { value: 'cool', emoji: '❄️', label: 'Cool' },
+                      { value: 'comfortable', emoji: '😊', label: 'Comfortable' },
+                      { value: 'warm', emoji: '😅', label: 'Warm' },
+                      { value: 'hot', emoji: '🥵', label: 'Hot' }
+                    ].map(({ value, emoji, label }) => (
+                      <button
+                        key={value}
+                        className={`status-btn ${busStatus.temperature === value ? 'selected' : ''}`}
+                        onClick={() => handleStatusChange('temperature', value)}
+                        type="button"
+                      >
+                        <span>{emoji}</span>
+                        <span>{label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* On Time Status */}
+                <div className="status-category">
+                  <span className="category-label">⏰ Schedule</span>
+                  <div className="status-options">
+                    {[
+                      { value: 'early', emoji: '⏰', label: 'Early' },
+                      { value: 'on_time', emoji: '✅', label: 'On Time' },
+                      { value: 'slightly_late', emoji: '😐', label: 'Bit Late' },
+                      { value: 'very_late', emoji: '😤', label: 'Very Late' }
+                    ].map(({ value, emoji, label }) => (
+                      <button
+                        key={value}
+                        className={`status-btn ${busStatus.onTime === value ? 'selected' : ''}`}
+                        onClick={() => handleStatusChange('onTime', value)}
+                        type="button"
+                      >
+                        <span>{emoji}</span>
+                        <span>{label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Additional Info */}
           <div className="input-group">
             <label>Additional Info (Optional)</label>
@@ -357,7 +514,7 @@ const SleekBusReporting = ({ user, currentLocation, onReport }) => {
               placeholder={
                 selectedAction === 'spot' 
                   ? "e.g., Bus heading towards HITEC City, quite full"
-                  : "e.g., Bus is on time, next stop Madhapur"
+                  : "e.g., Bus is on time, next stop Madhapur, AC working well"
               }
               value={additionalInfo}
               onChange={(e) => setAdditionalInfo(e.target.value)}
@@ -387,6 +544,7 @@ const SleekBusReporting = ({ user, currentLocation, onReport }) => {
               <span className="stat-label">Points:</span>
               <span className="stat-value">
                 +{confidence === 'high' ? '5' : confidence === 'medium' ? '3' : '1'}
+                {attachedPhoto && ' +2'}
               </span>
             </div>
             <div className="stat">
@@ -395,6 +553,14 @@ const SleekBusReporting = ({ user, currentLocation, onReport }) => {
                 {selectedAction === 'spot' ? 'One-time' : 'Live track'}
               </span>
             </div>
+            {selectedAction === 'traveling' && (
+              <div className="stat">
+                <span className="stat-label">Status:</span>
+                <span className="stat-value">
+                  {Object.values(busStatus).filter(v => v).length} items
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </div>

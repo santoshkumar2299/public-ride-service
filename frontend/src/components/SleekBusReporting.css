@@ -493,6 +493,75 @@
   box-shadow: none;
 }
 
+/* Bus Status Categories */
+.status-categories {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  margin-top: var(--space-sm);
+}
+
+.status-category {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.category-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--space-xs);
+}
+
+.status-options {
+  display: flex;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
+}
+
+.status-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-sm);
+  border: 2px solid rgba(0, 0, 0, 0.06);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.8rem;
+  font-weight: 500;
+  min-width: 60px;
+  text-align: center;
+}
+
+.status-btn:hover {
+  border-color: var(--primary-color);
+  background: rgba(233, 30, 99, 0.05);
+  transform: translateY(-1px);
+}
+
+.status-btn.selected {
+  border-color: var(--primary-color);
+  background: var(--primary-color);
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(233, 30, 99, 0.3);
+}
+
+.status-btn span:first-child {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.status-btn span:last-child {
+  font-size: 0.75rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+
 /* Quick Stats */
 .quick-stats {
   display: flex;
@@ -553,6 +622,23 @@
   .stat {
     flex-direction: row;
     justify-content: space-between;
+  }
+
+  .status-options {
+    gap: var(--space-xs);
+  }
+
+  .status-btn {
+    min-width: 50px;
+    padding: var(--space-xs);
+  }
+
+  .status-btn span:first-child {
+    font-size: 1rem;
+  }
+
+  .status-btn span:last-child {
+    font-size: 0.7rem;
   }
 }
 
