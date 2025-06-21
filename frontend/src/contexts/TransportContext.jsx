@@ -50,20 +50,33 @@ export const TransportProvider = ({ children }) => {
   const fetchTransportTypes = async () => {
     try {
       setLoading(true);
+      setError(null);
+      console.log('🚀 Fetching transport types from:', `${API_BASE}/api/transports/types`);
+      
       const response = await fetch(`${API_BASE}/api/transports/types`);
-      if (!response.ok) throw new Error('Failed to fetch transport types');
+      console.log('📡 Response status:', response.status, response.statusText);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: Failed to fetch transport types`);
+      }
       
       const data = await response.json();
+      console.log('📊 Received data:', data);
+      console.log('🚌 Transport types found:', data.transport_types?.length || 0);
+      
       setTransportTypes(data.transport_types || []);
       
       // Auto-select bus as default
       const busType = data.transport_types?.find(type => type.name.toLowerCase() === 'bus');
       if (busType && !selectedTransportType) {
+        console.log('🎯 Auto-selecting bus type:', busType);
         setSelectedTransportType(busType);
       }
     } catch (err) {
-      setError('Failed to load transport types');
-      console.error('Error fetching transport types:', err);
+      const errorMessage = `Failed to load transport types: ${err.message}`;
+      setError(errorMessage);
+      console.error('❌ Error fetching transport types:', err);
+      console.error('❌ API_BASE:', API_BASE);
     } finally {
       setLoading(false);
     }
