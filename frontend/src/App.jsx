@@ -10,6 +10,7 @@ import ActiveRides from './components/ActiveRides'
 import Profile from './components/Profile'
 import LoadingSkeleton from './components/LoadingSkeleton'
 import TransportModeSelector from './components/TransportModeSelector'
+import PublicTransitTracker from './components/PublicTransitTracker'
 import { TransportProvider, useTransport } from './contexts/TransportContext'
 import { CarIcon } from './components/Icons'
 
@@ -21,7 +22,7 @@ function AppContent() {
   const [isLoading, setIsLoading] = useState(true)
   const [showTransportSelector, setShowTransportSelector] = useState(false)
   
-  const { selectedTransportType, isRideSharing } = useTransport()
+  const { selectedTransportType, isRideSharing, isPublicTransport } = useTransport()
 
   // Check for stored user on app load
   useEffect(() => {
@@ -161,6 +162,17 @@ function AppContent() {
         return <Profile user={user} onLogout={handleLogout} />;
       case 'home':
       default:
+        // If public transport is selected, show the transit tracker
+        if (isPublicTransport) {
+          return (
+            <PublicTransitTracker 
+              user={user}
+              onNavigate={handleNavigate}
+            />
+          );
+        }
+        
+        // Default to ride-sharing map view
         return (
           <MapFirstView 
             user={user} 
