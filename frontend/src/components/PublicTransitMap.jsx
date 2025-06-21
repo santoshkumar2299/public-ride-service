@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import { useTransport } from '../contexts/TransportContext';
-import BusReportingInterface from './BusReportingInterface';
+import SleekBusReporting from './SleekBusReporting';
 import './PublicTransitMap.css';
 
 // Custom bus marker icons
@@ -74,8 +74,7 @@ const PublicTransitMap = ({ user, onNavigate }) => {
   const [isPolling, setIsPolling] = useState(true);
   const pollingIntervalRef = useRef(null);
   
-  // Bus reporting
-  const [showReporting, setShowReporting] = useState(false);
+  // Bus reporting (no longer needed with sleek interface)
 
   // Get user's current location
   useEffect(() => {
@@ -359,32 +358,33 @@ const PublicTransitMap = ({ user, onNavigate }) => {
     setMapZoom(Math.min(mapZoom + 2, 18));
   };
 
-  // Handle bus reporting
-  const handleBusReport = async (reportData) => {
+  // Handle bus reporting with photo support
+  const handleBusReport = async (formData, reportType) => {
     try {
       const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
       
       let endpoint = '';
-      if (reportData.type === 'spot') {
+      if (reportType === 'spot') {
         endpoint = '/api/reports/bus-spot';
-      } else if (reportData.type === 'traveling') {
+      } else if (reportType === 'traveling') {
         endpoint = '/api/tracking/start';
       }
 
       const response = await fetch(`${API_BASE}${endpoint}`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(reportData),
+        body: formData, // FormData handles multipart for photo uploads
       });
 
       if (response.ok) {
         // Refresh bus data to show the new report
         fetchLiveBusesInViewport();
         
-        // Show success message
-        console.log('Bus report submitted successfully');
+        // Show success notification
+        const result = await response.json();
+        console.log('Bus report submitted successfully:', result);
+        
+        // Could add a toast notification here
+        return result;
       } else {
         throw new Error('Failed to submit report');
       }
@@ -574,28 +574,12 @@ const PublicTransitMap = ({ user, onNavigate }) => {
           )}
         </div>
 
-        {/* Floating Action Button for Bus Reporting */}
-        <button 
-          className="fab-report-bus"
-          onClick={() => setShowReporting(true)}
-          title="Report Bus Location"
-        >
-          <span className="fab-icon">📍</span>
-          <span className="fab-text">Report Bus</span>
-        </button>
-
-        {/* Bus Reporting Interface */}
-        {showReporting && (
-          <>
-            <div className="reporting-overlay" onClick={() => setShowReporting(false)} />
-            <BusReportingInterface
-              user={user}
-              currentLocation={userLocation}
-              onClose={() => setShowReporting(false)}
-              onReport={handleBusReport}
-            />
-          </>
-        )}
+        {/* Sleek Bus Reporting Interface */}
+        <SleekBusReporting
+          user={user}
+          currentLocation={userLocation}
+          onReport={handleBusReport}
+        />
       </div>
     </div>
   );
