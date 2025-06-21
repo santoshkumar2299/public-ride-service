@@ -209,7 +209,106 @@ const initDB = () => {
             ON bus_spot_reports (bus_number, route_id)`);
 
     // Bus stop waiting and humanity credits system
-    db.run(`CREATE TABLE IF NOT EXISTS bus_stop_helpers (\n      id INTEGER PRIMARY KEY AUTOINCREMENT,\n      user_id TEXT NOT NULL,\n      bus_stop_name TEXT NOT NULL,\n      bus_stop_lat REAL NOT NULL,\n      bus_stop_lng REAL NOT NULL,\n      waiting_for_buses TEXT, -- JSON array of bus numbers/routes\n      arrival_updates TEXT, -- JSON array of arrival predictions\n      help_start_time DATETIME DEFAULT CURRENT_TIMESTAMP,\n      help_end_time DATETIME,\n      is_active BOOLEAN DEFAULT 1,\n      total_people_helped INTEGER DEFAULT 0,\n      humanity_credits_earned INTEGER DEFAULT 0,\n      helper_rating REAL DEFAULT 5.0,\n      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,\n      FOREIGN KEY (user_id) REFERENCES users (id)\n    )`);\n\n    // Humanity credits tracking\n    db.run(`CREATE TABLE IF NOT EXISTS humanity_credits (\n      id INTEGER PRIMARY KEY AUTOINCREMENT,\n      helper_user_id TEXT NOT NULL,\n      beneficiary_user_id TEXT NOT NULL,\n      credit_type TEXT NOT NULL, -- 'bus_arrival_help', 'route_guidance', 'general_assistance'\n      credit_amount INTEGER DEFAULT 1,\n      context_data TEXT, -- JSON with details about the help provided\n      bus_stop_location TEXT,\n      acknowledgment_message TEXT,\n      is_verified BOOLEAN DEFAULT 0,\n      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,\n      FOREIGN KEY (helper_user_id) REFERENCES users (id),\n      FOREIGN KEY (beneficiary_user_id) REFERENCES users (id)\n    )`);\n\n    // Bus arrival predictions from waiting users\n    db.run(`CREATE TABLE IF NOT EXISTS bus_stop_arrival_updates (\n      id INTEGER PRIMARY KEY AUTOINCREMENT,\n      helper_id INTEGER NOT NULL,\n      bus_number TEXT NOT NULL,\n      route_id INTEGER,\n      estimated_arrival_minutes INTEGER NOT NULL,\n      confidence_level TEXT DEFAULT 'medium',\n      update_method TEXT DEFAULT 'visual_sighting', -- 'visual_sighting', 'schedule_check', 'local_knowledge'\n      additional_info TEXT,\n      beneficiaries_count INTEGER DEFAULT 0, -- how many people used this info\n      accuracy_score REAL,\n      actual_arrival_time DATETIME,\n      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,\n      FOREIGN KEY (helper_id) REFERENCES bus_stop_helpers (id),\n      FOREIGN KEY (route_id) REFERENCES transport_routes (id)\n    )`);\n\n    // Community acknowledgments and verifications\n    db.run(`CREATE TABLE IF NOT EXISTS help_acknowledgments (\n      id INTEGER PRIMARY KEY AUTOINCREMENT,\n      arrival_update_id INTEGER NOT NULL,\n      beneficiary_user_id TEXT NOT NULL,\n      helper_user_id TEXT NOT NULL,\n      acknowledgment_type TEXT DEFAULT 'used_info', -- 'used_info', 'accurate_prediction', 'helpful_guidance'\n      rating INTEGER DEFAULT 5, -- 1-5 stars\n      feedback_message TEXT,\n      was_helpful BOOLEAN DEFAULT 1,\n      credits_awarded INTEGER DEFAULT 1,\n      acknowledged_at DATETIME DEFAULT CURRENT_TIMESTAMP,\n      FOREIGN KEY (arrival_update_id) REFERENCES bus_stop_arrival_updates (id),\n      FOREIGN KEY (beneficiary_user_id) REFERENCES users (id),\n      FOREIGN KEY (helper_user_id) REFERENCES users (id)\n    )`);\n\n    // User humanity scores and reputation\n    db.run(`CREATE TABLE IF NOT EXISTS user_humanity_scores (\n      id INTEGER PRIMARY KEY AUTOINCREMENT,\n      user_id TEXT UNIQUE NOT NULL,\n      total_credits INTEGER DEFAULT 0,\n      total_people_helped INTEGER DEFAULT 0,\n      average_rating REAL DEFAULT 5.0,\n      helper_level TEXT DEFAULT 'bronze', -- bronze, silver, gold, platinum, humanity_hero\n      times_helped_others INTEGER DEFAULT 0,\n      times_received_help INTEGER DEFAULT 0,\n      consecutive_helpful_days INTEGER DEFAULT 0,\n      last_help_provided DATETIME,\n      badges_earned TEXT, -- JSON array of special badges\n      reputation_points INTEGER DEFAULT 0,\n      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,\n      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,\n      FOREIGN KEY (user_id) REFERENCES users (id)\n    )`);\n\n    // Performance indexes\n    db.run(`CREATE INDEX IF NOT EXISTS idx_bus_stop_helpers_location \n            ON bus_stop_helpers (bus_stop_lat, bus_stop_lng, is_active)`);\n    db.run(`CREATE INDEX IF NOT EXISTS idx_bus_stop_helpers_active \n            ON bus_stop_helpers (is_active, help_start_time)`);\n    db.run(`CREATE INDEX IF NOT EXISTS idx_humanity_credits_helper \n            ON humanity_credits (helper_user_id, created_at)`);\n    db.run(`CREATE INDEX IF NOT EXISTS idx_arrival_updates_time \n            ON bus_stop_arrival_updates (created_at, bus_number)`);\n\n    // Initialize default transport types\n    insertDefaultTransportTypes();
+    db.run(`CREATE TABLE IF NOT EXISTS bus_stop_helpers (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id TEXT NOT NULL,
+      bus_stop_name TEXT NOT NULL,
+      bus_stop_lat REAL NOT NULL,
+      bus_stop_lng REAL NOT NULL,
+      waiting_for_buses TEXT,
+      arrival_updates TEXT,
+      help_start_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+      help_end_time DATETIME,
+      is_active BOOLEAN DEFAULT 1,
+      total_people_helped INTEGER DEFAULT 0,
+      humanity_credits_earned INTEGER DEFAULT 0,
+      helper_rating REAL DEFAULT 5.0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users (id)
+    )`);
+
+    // Humanity credits tracking
+    db.run(`CREATE TABLE IF NOT EXISTS humanity_credits (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      helper_user_id TEXT NOT NULL,
+      beneficiary_user_id TEXT NOT NULL,
+      credit_type TEXT NOT NULL,
+      credit_amount INTEGER DEFAULT 1,
+      context_data TEXT,
+      bus_stop_location TEXT,
+      acknowledgment_message TEXT,
+      is_verified BOOLEAN DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (helper_user_id) REFERENCES users (id),
+      FOREIGN KEY (beneficiary_user_id) REFERENCES users (id)
+    )`);
+
+    // Bus arrival predictions from waiting users
+    db.run(`CREATE TABLE IF NOT EXISTS bus_stop_arrival_updates (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      helper_id INTEGER NOT NULL,
+      bus_number TEXT NOT NULL,
+      route_id INTEGER,
+      estimated_arrival_minutes INTEGER NOT NULL,
+      confidence_level TEXT DEFAULT 'medium',
+      update_method TEXT DEFAULT 'visual_sighting',
+      additional_info TEXT,
+      beneficiaries_count INTEGER DEFAULT 0,
+      accuracy_score REAL,
+      actual_arrival_time DATETIME,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (helper_id) REFERENCES bus_stop_helpers (id),
+      FOREIGN KEY (route_id) REFERENCES transport_routes (id)
+    )`);
+
+    // Community acknowledgments and verifications
+    db.run(`CREATE TABLE IF NOT EXISTS help_acknowledgments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      arrival_update_id INTEGER NOT NULL,
+      beneficiary_user_id TEXT NOT NULL,
+      helper_user_id TEXT NOT NULL,
+      acknowledgment_type TEXT DEFAULT 'used_info',
+      rating INTEGER DEFAULT 5,
+      feedback_message TEXT,
+      was_helpful BOOLEAN DEFAULT 1,
+      credits_awarded INTEGER DEFAULT 1,
+      acknowledged_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (arrival_update_id) REFERENCES bus_stop_arrival_updates (id),
+      FOREIGN KEY (beneficiary_user_id) REFERENCES users (id),
+      FOREIGN KEY (helper_user_id) REFERENCES users (id)
+    )`);
+
+    // User humanity scores and reputation
+    db.run(`CREATE TABLE IF NOT EXISTS user_humanity_scores (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id TEXT UNIQUE NOT NULL,
+      total_credits INTEGER DEFAULT 0,
+      total_people_helped INTEGER DEFAULT 0,
+      average_rating REAL DEFAULT 5.0,
+      helper_level TEXT DEFAULT 'bronze',
+      times_helped_others INTEGER DEFAULT 0,
+      times_received_help INTEGER DEFAULT 0,
+      consecutive_helpful_days INTEGER DEFAULT 0,
+      last_help_provided DATETIME,
+      badges_earned TEXT,
+      reputation_points INTEGER DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users (id)
+    )`);
+
+    // Performance indexes
+    db.run(`CREATE INDEX IF NOT EXISTS idx_bus_stop_helpers_location 
+            ON bus_stop_helpers (bus_stop_lat, bus_stop_lng, is_active)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_bus_stop_helpers_active 
+            ON bus_stop_helpers (is_active, help_start_time)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_humanity_credits_helper 
+            ON humanity_credits (helper_user_id, created_at)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_arrival_updates_time 
+            ON bus_stop_arrival_updates (created_at, bus_number)`);
+
+    // Initialize default transport types
+    insertDefaultTransportTypes();
   });
 };
 
