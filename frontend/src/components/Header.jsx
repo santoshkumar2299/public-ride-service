@@ -9,7 +9,9 @@ function Header({
   journeyData, 
   onNavigate, 
   onGoBack, 
-  onLogout 
+  onLogout,
+  selectedTransportType,
+  onChangeTransport
 }) {
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -45,8 +47,13 @@ function Header({
       case 'active-rides': return 'Active Rides'
       case 'profile': return 'Profile'
       case 'journey-complete': return 'Journey Complete'
-      default: return 'Ride Share'
+      default: return 'Transit Tracker'
     }
+  }
+
+  const getTransportIcon = () => {
+    if (!selectedTransportType) return '🚗'
+    return selectedTransportType.icon || '🚌'
   }
 
   const showBackButton = userRole || currentView === 'journey-complete'
@@ -72,8 +79,18 @@ function Header({
           
           {/* Mobile: App name in center */}
           <div className="mobile-brand" onClick={() => onNavigate('home')}>
-            <CarIcon size={20} color="#e91e63" />
-            <span className="mobile-app-name">RideShare</span>
+            <span className="transport-icon">{getTransportIcon()}</span>
+            <div className="brand-text">
+              <span className="mobile-app-name">Transit Tracker</span>
+              {selectedTransportType && (
+                <span className="transport-mode">{selectedTransportType.name}</span>
+              )}
+            </div>
+            {onChangeTransport && (
+              <button className="change-transport-btn" onClick={onChangeTransport}>
+                ⚙️
+              </button>
+            )}
           </div>
 
           {/* Mobile: User avatar on right */}
@@ -180,9 +197,18 @@ function Header({
       <div className="header-container desktop">
         {/* Desktop: App Name/Brand on left */}
         <div className="app-brand desktop" onClick={() => onNavigate('home')}>
-          <CarIcon size={28} color="#e91e63" />
-          <span className="app-name desktop">RideShare</span>
-          <span className="app-tagline">Connect & Go</span>
+          <span className="transport-icon large">{getTransportIcon()}</span>
+          <div className="brand-info">
+            <span className="app-name desktop">Transit Tracker</span>
+            <span className="app-tagline">
+              {selectedTransportType ? selectedTransportType.name : 'Multi-Modal Transport'}
+            </span>
+          </div>
+          {onChangeTransport && (
+            <button className="change-transport-btn desktop" onClick={onChangeTransport}>
+              Change Mode
+            </button>
+          )}
         </div>
 
         {/* Desktop: Actions on right */}

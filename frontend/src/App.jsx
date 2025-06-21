@@ -9,14 +9,19 @@ import RideHistory from './components/RideHistory'
 import ActiveRides from './components/ActiveRides'
 import Profile from './components/Profile'
 import LoadingSkeleton from './components/LoadingSkeleton'
+import TransportModeSelector from './components/TransportModeSelector'
+import { TransportProvider, useTransport } from './contexts/TransportContext'
 import { CarIcon } from './components/Icons'
 
-function App() {
+function AppContent() {
   const [user, setUser] = useState(null)
   const [currentView, setCurrentView] = useState('home')
   const [userRole, setUserRole] = useState('')
   const [journeyData, setJourneyData] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [showTransportSelector, setShowTransportSelector] = useState(false)
+  
+  const { selectedTransportType, isRideSharing } = useTransport()
 
   // Check for stored user on app load
   useEffect(() => {
@@ -47,6 +52,7 @@ function App() {
     setCurrentView(view)
     if (view === 'home') {
       setUserRole('')
+      setShowTransportSelector(false)
     }
   }
 
@@ -90,6 +96,13 @@ function App() {
     setUserRole('')
     setJourneyData(null)
     setCurrentView('home')
+    setShowTransportSelector(false)
+  }
+
+  const handleTransportModeChange = (transportType) => {
+    setShowTransportSelector(false)
+    // If it's ride sharing, show the existing map view
+    // If it's public transport, we could show a different interface
   }
 
   if (isLoading) {
@@ -119,6 +132,15 @@ function App() {
   }
 
   const renderContent = () => {
+    // Show transport selector if requested and no transport mode selected
+    if (showTransportSelector || (!selectedTransportType && currentView === 'home' && !userRole)) {
+      return (
+        <TransportModeSelector 
+          onModeChange={handleTransportModeChange}
+        />
+      );
+    }
+
     if (userRole) {
       // Show ride flows when a role is selected
       if (userRole === 'rider') {
@@ -145,6 +167,7 @@ function App() {
             onRideRequest={handleRideRequest}
             onRideOffer={handleRideOffer}
             journeyData={journeyData}
+            onChangeTransport={() => setShowTransportSelector(true)}
           />
         );
     }
@@ -160,6 +183,8 @@ function App() {
         onNavigate={handleNavigate}
         onGoBack={handleGoBack}
         onLogout={handleLogout}
+        selectedTransportType={selectedTransportType}
+        onChangeTransport={() => setShowTransportSelector(true)}
       />
       
       <main>
@@ -167,6 +192,14 @@ function App() {
       </main>
     </div>
   )
+}
+
+function App() {
+  return (
+    <TransportProvider>
+      <AppContent />
+    </TransportProvider>
+  );
 }
 
 export default App
