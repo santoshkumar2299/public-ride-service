@@ -23,6 +23,53 @@ function LiveCityMap({
   const [liveTransport, setLiveTransport] = useState([]);
   const [mapCenter, setMapCenter] = useState([config.defaultMapCenter.lat, config.defaultMapCenter.lng]);
   const [mapZoom, setMapZoom] = useState(12);
+  const [currentCity, setCurrentCity] = useState(null);
+  const [isDetectingCity, setIsDetectingCity] = useState(false);
+
+  // Function to reverse geocode and extract city name
+  const detectCityName = async (lat, lng) => {
+    setIsDetectingCity(true);
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?` + 
+        new URLSearchParams({
+          lat: lat.toString(),
+          lon: lng.toString(),
+          format: 'json',
+          addressdetails: '1',
+          'accept-language': 'en'
+        }),
+        {
+          headers: {
+            'User-Agent': 'RideShareMVP/1.0'
+          }
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        const address = data.address || {};
+        
+        // Extract city name from address components
+        const city = address.city || 
+                    address.town || 
+                    address.village || 
+                    address.municipality ||
+                    address.county ||
+                    address.state_district ||
+                    address.state ||
+                    null;
+        
+        if (city) {
+          setCurrentCity(city);
+        }
+      }
+    } catch (error) {
+      console.error('City detection error:', error);
+    } finally {
+      setIsDetectingCity(false);
+    }
+  };
 
   // Auto-detect user location on mount
   useEffect(() => {
@@ -37,16 +84,21 @@ function LiveCityMap({
           setMapCenter([location.lat, location.lng]);
           setMapZoom(14);
           
+          // Detect city name for user location
+          detectCityName(location.lat, location.lng);
+          
           // Location detected - ready for scenario-based interactions
         },
         (error) => {
           console.log('Location detection failed:', error);
-          // Fallback to default location
+          // Fallback to default location - also detect city name for default location
+          detectCityName(config.defaultMapCenter.lat, config.defaultMapCenter.lng);
         },
         { timeout: 5000, enableHighAccuracy: false }
       );
     } else {
-      // No geolocation support - use default location
+      // No geolocation support - use default location and detect city name
+      detectCityName(config.defaultMapCenter.lat, config.defaultMapCenter.lng);
     }
   }, []);
 
@@ -207,7 +259,11 @@ function LiveCityMap({
         <div className="status-card">
           <span className="status-icon">📍</span>
           <span className="status-text">
-            {userLocation ? "Location detected" : "Using default location"}
+            {isDetectingCity ? "Detecting location..." : 
+             userLocation ? 
+               (currentCity ? `Exploring ${currentCity}` : "Location detected") : 
+               (currentCity ? `Exploring ${currentCity}` : "Using default location")
+            }
           </span>
         </div>
       </div>

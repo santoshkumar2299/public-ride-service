@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 
-function LocationSearch({ onLocationSelect, placeholder = "Search for a location...", referenceLocation = null }) {
+function LocationSearch({ onLocationSelect, placeholder = "Search for a location...", referenceLocation = null, fastMode = false }) {
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -8,6 +8,7 @@ function LocationSearch({ onLocationSelect, placeholder = "Search for a location
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [detectedCity, setDetectedCity] = useState(null);
   const [searchArea, setSearchArea] = useState(null);
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
   const searchTimeoutRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -251,6 +252,101 @@ function LocationSearch({ onLocationSelect, placeholder = "Search for a location
     setSelectedIndex(-1);
     inputRef.current?.focus();
   };
+  
+  const handleUseCurrentLocation = () => {
+    setIsGettingLocation(true);
+    
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const location = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          };
+          
+          try {
+            // Reverse geocode to get address
+            const response = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?` + 
+              new URLSearchParams({
+                lat: location.lat.toString(),
+                lon: location.lng.toString(),
+                format: 'json',
+                addressdetails: '1',
+                'accept-language': 'en'
+              }),
+              {
+                headers: {
+                  'User-Agent': 'RideShareMVP/1.0'
+                }
+              }
+            );
+            
+            if (response.ok) {
+              const data = await response.json();
+              setQuery('Current Location');
+              onLocationSelect({
+                lat: location.lat,
+                lng: location.lng,
+                address: data.display_name || 'Current Location',
+                type: 'current_location'
+              });
+            } else {
+              // Fallback if reverse geocoding fails
+              setQuery('Current Location');
+              onLocationSelect({
+                lat: location.lat,
+                lng: location.lng,
+                address: 'Current Location',
+                type: 'current_location'
+              });
+            }
+          } catch (error) {
+            console.error('Reverse geocoding error:', error);
+            // Still use the coordinates even if reverse geocoding fails
+            setQuery('Current Location');
+            onLocationSelect({
+              lat: location.lat,
+              lng: location.lng,
+              address: 'Current Location',
+              type: 'current_location'
+            });
+          } finally {
+            setIsGettingLocation(false);
+            setSuggestions([]);
+            setShowSuggestions(false);
+          }
+        },
+        (error) => {
+          console.error('Geolocation error:', error);
+          setIsGettingLocation(false);
+          
+          // Show user-friendly error message
+          let errorMessage = 'Unable to access location';
+          switch(error.code) {
+            case error.PERMISSION_DENIED:
+              errorMessage = 'Location access denied. Please enable location permissions.';
+              break;
+            case error.POSITION_UNAVAILABLE:
+              errorMessage = 'Location information unavailable.';
+              break;
+            case error.TIMEOUT:
+              errorMessage = 'Location request timed out.';
+              break;
+          }
+          alert(errorMessage);
+        },
+        {
+          timeout: 10000,
+          enableHighAccuracy: true,
+          maximumAge: 300000 // 5 minutes
+        }
+      );
+    } else {
+      setIsGettingLocation(false);
+      alert('Geolocation is not supported by this browser.');
+    }
+  };
 
   const getLocationIcon = (type) => {
     const icons = {
@@ -284,7 +380,7 @@ function LocationSearch({ onLocationSelect, placeholder = "Search for a location
   }, []);
 
   return (
-    <div className="location-search">
+    <div className={`location-search ${fastMode ? 'fast-mode' : ''}`}>
       <div className="search-input-container">
         <input
           ref={inputRef}
@@ -305,6 +401,17 @@ function LocationSearch({ onLocationSelect, placeholder = "Search for a location
           </div>
         )}
         
+        {/* Current Location button */}
+        <button
+          type="button"
+          onClick={handleUseCurrentLocation}
+          className="search-current-location"
+          title="Use current location"
+          disabled={isGettingLocation}
+        >
+          {isGettingLocation ? '🔄' : '📍'}
+        </button>
+        
         {/* Clear button */}
         {query && (
           <button
@@ -318,7 +425,86 @@ function LocationSearch({ onLocationSelect, placeholder = "Search for a location
         )}
       </div>
 
-      {/* Search suggestions */}
+      {/* Categorized Suggestions (shown when input is empty/focused) */}
+      {showCategorizedSuggestions && !query.trim() && (
+        <div className="categorized-suggestions">
+          {/* Frequent Places */}
+          {frequentPlaces.length > 0 && (
+            <div className="suggestion-category">
+              <div className="category-header">
+                <span className="category-icon">⭐</span>
+                <span className="category-title">Frequent</span>
+              </div>
+              {frequentPlaces.map((place, index) => (
+                <button
+                  key={`frequent-${index}`}
+                  type="button"
+                  className="search-suggestion categorized"
+                  onClick={() => handleSuggestionClick(place)}
+                >
+                  <span className="suggestion-icon">⭐</span>
+                  <span className="suggestion-text">{place.name}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          
+          {/* Recent Searches */}
+          {recentSearches.length > 0 && (
+            <div className="suggestion-category">
+              <div className="category-header">
+                <span className="category-icon">🕒</span>
+                <span className="category-title">Recent</span>
+              </div>
+              {recentSearches.map((place, index) => (
+                <button
+                  key={`recent-${index}`}
+                  type="button"
+                  className="search-suggestion categorized"
+                  onClick={() => handleSuggestionClick(place)}
+                >
+                  <span className="suggestion-icon">🕒</span>
+                  <span className="suggestion-text">{place.name}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          
+          {/* Saved Places */}
+          {savedPlaces.length > 0 && (
+            <div className="suggestion-category">
+              <div className="category-header">
+                <span className="category-icon">💾</span>
+                <span className="category-title">Saved</span>
+              </div>
+              {savedPlaces.map((place, index) => (
+                <button
+                  key={`saved-${index}`}
+                  type="button"
+                  className="search-suggestion categorized"
+                  onClick={() => handleSuggestionClick(place)}
+                >
+                  <span className="suggestion-icon">💾</span>
+                  <span className="suggestion-text">{place.name}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          
+          {/* Show minimize button */}
+          <div className="suggestions-expand">
+            <button 
+              type="button"
+              className="expand-suggestions-btn"
+              onClick={() => setShowCategorizedSuggestions(false)}
+            >
+              ↑ Minimize suggestions
+            </button>
+          </div>
+        </div>
+      )}
+      
+      {/* Regular Search Suggestions (shown when typing) */}
       {showSuggestions && suggestions.length > 0 && (
         <div className="search-suggestions">
           {suggestions.map((suggestion, index) => (
@@ -343,6 +529,19 @@ function LocationSearch({ onLocationSelect, placeholder = "Search for a location
               </div>
             </button>
           ))}
+        </div>
+      )}
+      
+      {/* Show categorized suggestions prompt when minimized */}
+      {!showSuggestions && !showCategorizedSuggestions && !query.trim() && (
+        <div className="suggestions-prompt">
+          <button 
+            type="button"
+            className="show-suggestions-btn"
+            onClick={() => setShowCategorizedSuggestions(true)}
+          >
+            ↓ Show recent & frequent places
+          </button>
         </div>
       )}
 
