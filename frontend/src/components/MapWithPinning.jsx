@@ -14,7 +14,8 @@ function MapWithPinning({
   onGoToLocation,
   onStartFromLocation,
   onFindRouteToLocation,
-  onAddToFavorites
+  onAddToFavorites,
+  onMapMove
 }) {
   const [pinnedLocation, setPinnedLocation] = useState(null);
   const [contextMenuVisible, setContextMenuVisible] = useState(false);
