@@ -15,7 +15,8 @@ function MapWithPinning({
   onStartFromLocation,
   onFindRouteToLocation,
   onAddToFavorites,
-  onMapMove
+  onMapMove,
+  onEditLocation
 }) {
   const [pinnedLocation, setPinnedLocation] = useState(null);
   const [contextMenuVisible, setContextMenuVisible] = useState(false);
@@ -106,6 +107,14 @@ function MapWithPinning({
     }
   }, [onAddToFavorites]);
 
+  // Handle "Edit location" action
+  const handleEditLocation = useCallback((coordinates) => {
+    console.log('Edit location:', coordinates);
+    if (onEditLocation) {
+      onEditLocation(coordinates);
+    }
+  }, [onEditLocation]);
+
   // Create enhanced markers including the pinned location
   const enhancedMarkers = [...markers];
   
@@ -144,6 +153,7 @@ function MapWithPinning({
         onStartFromHere={handleStartFromHere}
         onHowToGo={handleHowToGo}
         onAddToFavorites={handleAddToFavorites}
+        onEditLocation={handleEditLocation}
       />
     </div>
   );

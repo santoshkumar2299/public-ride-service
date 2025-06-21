@@ -80,9 +80,34 @@ function MapBoundsHandler({ bounds }) {
 // Component to handle external zoom control
 function MapZoomHandler({ zoom, onZoomChange }) {
   const map = useMap();
+  const lastZoom = useRef(null);
+  const isUserZooming = useRef(false);
   
   useEffect(() => {
-    if (zoom !== undefined && zoom !== null) {
+    // Track when user starts zooming
+    const handleZoomStart = () => {
+      isUserZooming.current = true;
+    };
+    
+    const handleZoomEnd = () => {
+      // Delay reset to allow zoom detection
+      setTimeout(() => {
+        isUserZooming.current = false;
+      }, 100);
+    };
+    
+    map.on('zoomstart', handleZoomStart);
+    map.on('zoomend', handleZoomEnd);
+    
+    return () => {
+      map.off('zoomstart', handleZoomStart);
+      map.off('zoomend', handleZoomEnd);
+    };
+  }, [map]);
+  
+  useEffect(() => {
+    if (zoom !== undefined && zoom !== null && zoom !== lastZoom.current && !isUserZooming.current) {
+      lastZoom.current = zoom;
       map.setZoom(zoom);
     }
   }, [map, zoom]);
@@ -103,19 +128,48 @@ function MapZoomHandler({ zoom, onZoomChange }) {
 }
 
 // Component to handle map center updates
-function MapCenterHandler({ center, zoom }) {
+function MapCenterHandler({ center, zoom, allowUserInteraction = true }) {
   const map = useMap();
+  const lastCenter = useRef(null);
+  const isUserInteracting = useRef(false);
+  
+  useEffect(() => {
+    // Track when user starts interacting with map
+    const handleMoveStart = () => {
+      isUserInteracting.current = true;
+    };
+    
+    const handleMoveEnd = () => {
+      // Delay reset to allow move detection
+      setTimeout(() => {
+        isUserInteracting.current = false;
+      }, 100);
+    };
+    
+    map.on('movestart', handleMoveStart);
+    map.on('moveend', handleMoveEnd);
+    
+    return () => {
+      map.off('movestart', handleMoveStart);
+      map.off('moveend', handleMoveEnd);
+    };
+  }, [map]);
   
   useEffect(() => {
     if (center && center.length === 2) {
-      console.log('Updating map center to:', center, 'with zoom:', zoom);
-      if (zoom) {
-        map.setView(center, zoom, { animate: true, duration: 0.5 });
-      } else {
+      const centerKey = `${center[0]},${center[1]}`;
+      const lastCenterKey = lastCenter.current ? `${lastCenter.current[0]},${lastCenter.current[1]}` : null;
+      
+      // Only update if center actually changed and user is not interacting
+      if (centerKey !== lastCenterKey && (!allowUserInteraction || !isUserInteracting.current)) {
+        console.log('Updating map center to:', center);
+        lastCenter.current = center;
+        
+        // Only change center, preserve current zoom level
         map.setView(center, map.getZoom(), { animate: true, duration: 0.5 });
       }
     }
-  }, [map, center, zoom]);
+  }, [map, center, zoom, allowUserInteraction]);
   
   return null;
 }
@@ -250,7 +304,8 @@ function MapView({
         {onMapClick && <MapClickHandler onMapClick={onMapClick} />}
         {bounds && <MapBoundsHandler bounds={bounds} />}
         {onZoomChange && <MapZoomHandler zoom={zoom} onZoomChange={onZoomChange} />}
-        <MapCenterHandler center={center} zoom={zoom} />
+        {onMapMove && <MapMoveHandler onMapMove={onMapMove} />}
+        <MapCenterHandler center={center} allowUserInteraction={true} />
         
         {/* Render route polylines */}
         {routeLines.map((route, index) => (

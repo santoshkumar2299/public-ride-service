@@ -27,6 +27,7 @@ function LiveCityMap({
   const [isDetectingCity, setIsDetectingCity] = useState(false);
   const [viewportCity, setViewportCity] = useState(null);
   const [isDetectingViewport, setIsDetectingViewport] = useState(false);
+  const [viewportCenter, setViewportCenter] = useState(null);
 
   // Function to reverse geocode and extract city name
   const detectCityName = async (lat, lng) => {
@@ -125,17 +126,17 @@ function LiveCityMap({
     const debouncedDetectViewport = () => {
       clearTimeout(timeoutId);
       timeoutId = setTimeout(() => {
-        detectViewportCity(mapCenter[0], mapCenter[1]);
+        detectViewportCity(viewportCenter[0], viewportCenter[1]);
       }, 1000); // Wait 1 second after user stops moving
     };
 
-    // Only detect if map center has changed
-    if (mapCenter && mapCenter[0] && mapCenter[1]) {
+    // Only detect if viewport center has changed
+    if (viewportCenter && viewportCenter[0] && viewportCenter[1]) {
       debouncedDetectViewport();
     }
 
     return () => clearTimeout(timeoutId);
-  }, [mapCenter, viewportCity]);
+  }, [viewportCenter, viewportCity]);
 
   // Auto-detect user location on mount
   useEffect(() => {
@@ -305,7 +306,8 @@ function LiveCityMap({
 
   // Handle map movement to update center coordinates
   const handleMapMove = (center) => {
-    setMapCenter([center.lat, center.lng]);
+    // Store viewport center separately to avoid interfering with map interactions
+    setViewportCenter([center.lat, center.lng]);
   };
 
   return (
