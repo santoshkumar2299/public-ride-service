@@ -5,6 +5,9 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require('uuid');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 const { db, initDB } = require('./database');
 const { findMatches, createMatch } = require('./matching');
 const { TransportService } = require('./services/transportService');
@@ -18,6 +21,43 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
+// Multer configuration for photo uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(__dirname, 'uploads', 'bus-reports');
+    // Create directory if it doesn't exist
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    // Generate unique filename: timestamp-userId-originalname
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const userId = req.body.user_id || 'unknown';
+    cb(null, `${userId}-${uniqueSuffix}${path.extname(file.originalname)}`);
+  }
+});
+
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    // Check file type
+    const allowedTypes = /jpeg|jpg|png|webp/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+
+    if (mimetype && extname) {
+      return cb(null, true);
+    } else {
+      cb(new Error('Only JPEG, PNG, and WebP images are allowed!'));
+    }
+  }
+});
+
 app.use(helmet());
 app.use(cors({
   origin: [FRONTEND_URL, 'http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175'],
@@ -25,6 +65,9 @@ app.use(cors({
 }));
 app.use(morgan(process.env.LOG_LEVEL || 'combined'));
 app.use(express.json());
+
+// Serve uploaded photos
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
@@ -992,8 +1035,8 @@ app.get('/api/search/destination', async (req, res) => {
 
 // BUS REPORTING API ENDPOINTS
 
-// Report a bus spotted at a location (one-time report)
-app.post('/api/reports/bus-spot', async (req, res) => {
+// Report a bus spotted at a location (one-time report) with optional photo
+app.post('/api/reports/bus-spot', upload.single('photo'), async (req, res) => {
   try {
     const { 
       bus_number, 
@@ -1009,22 +1052,32 @@ app.post('/api/reports/bus-spot', async (req, res) => {
       return res.status(400).json({ error: 'bus_number, location, and user_id are required' });
     }
 
+    // Parse location if it's a string
+    const locationData = typeof location === 'string' ? JSON.parse(location) : location;
+    
+    // Handle photo upload
+    let photoPath = null;
+    if (req.file) {
+      photoPath = req.file.filename; // Store relative path
+    }
+
     // Insert bus spot report
     const spotReportSql = `
       INSERT INTO bus_spot_reports (
         user_id, bus_number, route_id, latitude, longitude, 
-        confidence_level, additional_info, reported_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        confidence_level, additional_info, photo_path, reported_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     db.run(spotReportSql, [
       user_id,
       bus_number,
-      route_id,
-      location.lat,
-      location.lng,
+      route_id || null,
+      locationData.lat,
+      locationData.lng,
       confidence || 'medium',
-      additional_info,
+      additional_info || null,
+      photoPath,
       timestamp || new Date().toISOString()
     ], function(err) {
       if (err) {
@@ -1032,20 +1085,28 @@ app.post('/api/reports/bus-spot', async (req, res) => {
         return res.status(500).json({ error: 'Failed to save spot report' });
       }
 
-      // Add to social score
+      // Add to social score with photo bonus
+      const hasPhoto = photoPath !== null;
+      const basePoints = confidence === 'high' ? 5 : confidence === 'medium' ? 3 : 1;
+      const photoBonus = hasPhoto ? 2 : 0; // Extra points for photo verification
+      
       socialScoreService.addContribution(user_id, { 
         type: 'spot_report',
-        confidence: confidence 
+        confidence: confidence,
+        has_photo: hasPhoto
       });
 
       res.status(201).json({ 
         message: 'Bus spot reported successfully',
         report_id: this.lastID,
-        social_points_earned: confidence === 'high' ? 5 : confidence === 'medium' ? 3 : 1
+        social_points_earned: basePoints + photoBonus,
+        has_photo: hasPhoto,
+        photo_bonus: photoBonus
       });
     });
 
   } catch (error) {
+    console.error('Bus spot report error:', error);
     res.status(500).json({ error: error.message });
   }
 });

@@ -177,6 +177,7 @@ const initDB = () => {
       longitude REAL NOT NULL,
       confidence_level TEXT DEFAULT 'medium', -- high, medium, low
       additional_info TEXT,
+      photo_path TEXT, -- path to uploaded photo
       reported_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       is_verified INTEGER DEFAULT 0, -- 0=unverified, 1=verified, -1=false
       verification_count INTEGER DEFAULT 0,
