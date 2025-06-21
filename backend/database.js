@@ -173,75 +173,88 @@ const initDB = () => {
 };
 
 const insertDefaultTransportTypes = () => {
-  const defaultTypes = [
-    {
-      name: 'Bus',
-      icon: '🚌',
-      description: 'City and intercity bus services',
-      tracking_config: JSON.stringify({
-        gps_interval: 10,
-        accuracy_threshold: 50,
-        speed_threshold: 80
-      }),
-      prediction_model: JSON.stringify({
-        type: 'time_distance',
-        factors: ['traffic', 'time_of_day', 'weather']
-      })
-    },
-    {
-      name: 'Train',
-      icon: '🚆',
-      description: 'Railway and metro train services',
-      tracking_config: JSON.stringify({
-        gps_interval: 30,
-        accuracy_threshold: 100,
-        speed_threshold: 120
-      }),
-      prediction_model: JSON.stringify({
-        type: 'schedule_based',
-        factors: ['delays', 'congestion']
-      })
-    },
-    {
-      name: 'Metro',
-      icon: '🚇',
-      description: 'Urban metro rail systems',
-      tracking_config: JSON.stringify({
-        gps_interval: 15,
-        accuracy_threshold: 25,
-        speed_threshold: 80
-      }),
-      prediction_model: JSON.stringify({
-        type: 'high_frequency',
-        factors: ['peak_hours', 'incidents']
-      })
-    },
-    {
-      name: 'Auto-rickshaw',
-      icon: '🛺',
-      description: 'Three-wheeler auto-rickshaw services',
-      tracking_config: JSON.stringify({
-        gps_interval: 5,
-        accuracy_threshold: 20,
-        speed_threshold: 60
-      }),
-      prediction_model: JSON.stringify({
-        type: 'on_demand',
-        factors: ['traffic', 'availability', 'weather']
-      })
+  // First check if we already have transport types
+  db.get('SELECT COUNT(*) as count FROM transport_types', (err, row) => {
+    if (err) {
+      console.error('Error checking transport types:', err);
+      return;
     }
-  ];
-
-  defaultTypes.forEach(type => {
-    db.run(`INSERT OR IGNORE INTO transport_types (name, icon, description, tracking_config, prediction_model) 
-            VALUES (?, ?, ?, ?, ?)`,
-      [type.name, type.icon, type.description, type.tracking_config, type.prediction_model],
-      function(err) {
-        if (err) {
-          console.log('Error inserting transport type:', err);
-        }
+    
+    if (row.count > 0) {
+      // Transport types already exist, skip insertion
+      return;
+    }
+    
+    const defaultTypes = [
+      {
+        name: 'Bus',
+        icon: '🚌',
+        description: 'City and intercity bus services',
+        tracking_config: JSON.stringify({
+          gps_interval: 10,
+          accuracy_threshold: 50,
+          speed_threshold: 80
+        }),
+        prediction_model: JSON.stringify({
+          type: 'time_distance',
+          factors: ['traffic', 'time_of_day', 'weather']
+        })
+      },
+      {
+        name: 'Train',
+        icon: '🚆',
+        description: 'Railway and metro train services',
+        tracking_config: JSON.stringify({
+          gps_interval: 30,
+          accuracy_threshold: 100,
+          speed_threshold: 120
+        }),
+        prediction_model: JSON.stringify({
+          type: 'schedule_based',
+          factors: ['delays', 'congestion']
+        })
+      },
+      {
+        name: 'Metro',
+        icon: '🚇',
+        description: 'Urban metro rail systems',
+        tracking_config: JSON.stringify({
+          gps_interval: 15,
+          accuracy_threshold: 25,
+          speed_threshold: 80
+        }),
+        prediction_model: JSON.stringify({
+          type: 'high_frequency',
+          factors: ['peak_hours', 'incidents']
+        })
+      },
+      {
+        name: 'Auto-rickshaw',
+        icon: '🛺',
+        description: 'Three-wheeler auto-rickshaw services',
+        tracking_config: JSON.stringify({
+          gps_interval: 5,
+          accuracy_threshold: 20,
+          speed_threshold: 60
+        }),
+        prediction_model: JSON.stringify({
+          type: 'on_demand',
+          factors: ['traffic', 'availability', 'weather']
+        })
       }
-    );
+    ];
+
+    defaultTypes.forEach(type => {
+      db.run(`INSERT INTO transport_types (name, icon, description, tracking_config, prediction_model) 
+              VALUES (?, ?, ?, ?, ?)`,
+        [type.name, type.icon, type.description, type.tracking_config, type.prediction_model],
+        function(err) {
+          if (err) {
+            console.log('Error inserting transport type:', err);
+          }
+        }
+      );
+    });
   });
 };
 
