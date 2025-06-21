@@ -16,7 +16,8 @@ function MapWithPinning({
   onFindRouteToLocation,
   onAddToFavorites,
   onMapMove,
-  onEditLocation
+  onEditLocation,
+  onBookRide
 }) {
   const [pinnedLocation, setPinnedLocation] = useState(null);
   const [contextMenuVisible, setContextMenuVisible] = useState(false);
@@ -115,6 +116,14 @@ function MapWithPinning({
     }
   }, [onEditLocation]);
 
+  // Handle "Book ride" action
+  const handleBookRide = useCallback((coordinates) => {
+    console.log('Book ride to:', coordinates);
+    if (onBookRide) {
+      onBookRide(coordinates);
+    }
+  }, [onBookRide]);
+
   // Create enhanced markers including the pinned location
   const enhancedMarkers = [...markers];
   
@@ -154,6 +163,7 @@ function MapWithPinning({
         onHowToGo={handleHowToGo}
         onAddToFavorites={handleAddToFavorites}
         onEditLocation={handleEditLocation}
+        onBookRide={handleBookRide}
       />
     </div>
   );

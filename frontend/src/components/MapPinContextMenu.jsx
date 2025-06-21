@@ -10,7 +10,8 @@ function MapPinContextMenu({
   onStartFromHere, 
   onHowToGo,
   onAddToFavorites,
-  onEditLocation
+  onEditLocation,
+  onBookRide
 }) {
   const menuRef = useRef(null);
 
@@ -109,6 +110,15 @@ function MapPinContextMenu({
           <span className="action-icon">🚀</span>
           <span className="action-text">Start from here</span>
           <span className="action-description">Set as origin point</span>
+        </button>
+
+        <button 
+          className="pin-action-btn find-transport featured"
+          onClick={() => handleAction('find-transport', onBookRide)}
+        >
+          <span className="action-icon">🚌</span>
+          <span className="action-text">Find Transport</span>
+          <span className="action-description">Bus, Train, Rideshare</span>
         </button>
 
         <button 

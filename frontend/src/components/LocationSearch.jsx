@@ -9,8 +9,14 @@ function LocationSearch({ onLocationSelect, placeholder = "Search for a location
   const [detectedCity, setDetectedCity] = useState(null);
   const [searchArea, setSearchArea] = useState(null);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [showCategorizedSuggestions, setShowCategorizedSuggestions] = useState(false);
   const searchTimeoutRef = useRef(null);
   const inputRef = useRef(null);
+
+  // Initialize localStorage-based categorized suggestions
+  const [frequentPlaces, setFrequentPlaces] = useState([]);
+  const [recentSearches, setRecentSearches] = useState([]);
+  const [savedPlaces, setSavedPlaces] = useState([]);
 
   // Extract city information from Nominatim address
   const extractCityInfo = (displayName) => {
@@ -369,6 +375,21 @@ function LocationSearch({ onLocationSelect, placeholder = "Search for a location
     };
     return icons[type] || '📍';
   };
+
+  // Load categorized suggestions from localStorage
+  useEffect(() => {
+    try {
+      const frequent = JSON.parse(localStorage.getItem('frequentPlaces') || '[]');
+      const recent = JSON.parse(localStorage.getItem('recentSearches') || '[]');
+      const saved = JSON.parse(localStorage.getItem('savedPlaces') || '[]');
+      
+      setFrequentPlaces(frequent.slice(0, 3)); // Top 3 frequent
+      setRecentSearches(recent.slice(0, 3)); // Top 3 recent
+      setSavedPlaces(saved.slice(0, 3)); // Top 3 saved
+    } catch (error) {
+      console.error('Error loading categorized suggestions:', error);
+    }
+  }, []);
 
   // Cleanup timeout on unmount
   useEffect(() => {

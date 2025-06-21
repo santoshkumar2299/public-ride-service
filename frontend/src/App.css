@@ -1862,6 +1862,15 @@ body {
   display: block !important;
   visibility: visible !important;
   opacity: 1 !important;
+  margin: 0 !important;
+}
+
+/* Force visibility for zoom control container */
+.leaflet-control-zoom-in,
+.leaflet-control-zoom-out {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
 .leaflet-control-zoom a {
@@ -1876,6 +1885,9 @@ body {
   height: 40px !important;
   line-height: 36px !important;
   text-align: center !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
 .leaflet-control-zoom a:hover {
@@ -1889,6 +1901,23 @@ body {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
+}
+
+/* Emergency visibility fix - Override any hiding CSS */
+.leaflet-container .leaflet-control-zoom {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  transform: none !important;
+  pointer-events: auto !important;
+}
+
+.leaflet-container .leaflet-control-zoom a {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  text-decoration: none !important;
 }
 
 /* Style the zoom buttons as a connected pair */

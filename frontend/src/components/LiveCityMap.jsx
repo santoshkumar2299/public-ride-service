@@ -9,6 +9,7 @@ import SpotTransportModal from './scenarios/SpotTransportModal';
 import ExploreOptionsModal from './scenarios/ExploreOptionsModal';
 import CommunityHelpModal from './scenarios/CommunityHelpModal';
 import QuickTravelModal from './QuickTravelModal';
+import CommunityTransportModal from './RideBookingModal';
 import { config } from '../config/env';
 
 function LiveCityMap({ 
@@ -31,6 +32,8 @@ function LiveCityMap({
   const [viewportCenter, setViewportCenter] = useState(null);
   const [showQuickTravelModal, setShowQuickTravelModal] = useState(false);
   const [editLocationCoords, setEditLocationCoords] = useState(null);
+  const [showRideBookingModal, setShowRideBookingModal] = useState(false);
+  const [rideDestination, setRideDestination] = useState(null);
 
   // Function to reverse geocode and extract city name
   const detectCityName = async (lat, lng) => {
@@ -334,6 +337,12 @@ function LiveCityMap({
     setEditLocationCoords(null);
   };
 
+  // Handle book ride from pin context menu
+  const handleBookRide = (coordinates) => {
+    setRideDestination(coordinates);
+    setShowRideBookingModal(true);
+  };
+
   return (
     <div className="interactive-city-map">
       {/* Full Screen Map with Pinning */}
@@ -350,6 +359,7 @@ function LiveCityMap({
           onAddToFavorites={handleAddToFavorites}
           onMapMove={handleMapMove}
           onEditLocation={handleEditLocation}
+          onBookRide={handleBookRide}
         />
       </div>
       
@@ -444,6 +454,17 @@ function LiveCityMap({
         }}
         onTravelTo={handleTravelTo}
         currentLocation={editLocationCoords}
+      />
+
+      {/* Community Transport Modal */}
+      <CommunityTransportModal
+        isVisible={showRideBookingModal}
+        onClose={() => {
+          setShowRideBookingModal(false);
+          setRideDestination(null);
+        }}
+        destination={rideDestination}
+        userLocation={userLocation}
       />
     </div>
   );

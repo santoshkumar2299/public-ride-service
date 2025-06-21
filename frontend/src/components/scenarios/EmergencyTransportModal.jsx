@@ -4,6 +4,11 @@ import BookingFeedbackModal from '../BookingFeedbackModal';
 import LocationSearch from '../LocationSearch';
 
 function EmergencyTransportModal({ onClose, userLocation }) {
+  // Add error boundary and safety checks
+  if (!onClose || typeof onClose !== 'function') {
+    console.error('EmergencyTransportModal: onClose prop is required');
+    return <div>Error: Missing required props</div>;
+  }
   const [destination, setDestination] = useState('');
   const [transportOptions, setTransportOptions] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -39,100 +44,204 @@ function EmergencyTransportModal({ onClose, userLocation }) {
         learnedDestinations = {};
       }
     
-    // Advanced context detection
-    const context = {
-      timeOfDay: hour < 6 ? 'early_morning' : 
-                 hour < 10 ? 'morning_rush' :
-                 hour < 12 ? 'late_morning' :
-                 hour < 14 ? 'lunch_time' :
-                 hour < 17 ? 'afternoon' :
-                 hour < 20 ? 'evening_rush' :
-                 hour < 22 ? 'evening' : 'night',
-      dayType: isWeekday ? 'weekday' : 'weekend',
-      urgencyLevel: 'high' // Since this is emergency transport
-    };
-    
-    // Enhanced smart destination suggestions with learned patterns
-    let suggestions = [];
-    
-    // Check for learned destinations for this time context
-    try {
-      const timeContextKey = hour.toString();
-      if (learnedDestinations && learnedDestinations[timeContextKey]) {
-        const learnedForTime = learnedDestinations[timeContextKey];
-        
-        // Add top learned destinations with safety checks
-        if (learnedForTime && typeof learnedForTime === 'object') {
-          Object.entries(learnedForTime)
-            .filter(([dest, data]) => {
-              return data && 
-                     typeof data === 'object' && 
-                     typeof data.confidence === 'number' && 
-                     typeof data.count === 'number' &&
-                     data.confidence > 60 && 
-                     data.count > 1;
-            })
-            .sort(([,a], [,b]) => {
-              const aScore = (a.confidence || 0) * (a.count || 0);
-              const bScore = (b.confidence || 0) * (b.count || 0);
-              return bScore - aScore;
-            })
-            .slice(0, 2)
-            .forEach(([destination, data]) => {
-              suggestions.push({
-                name: destination,
-                address: destination,
-                context: '🧠 Your usual spot',
-                confidence: Math.min(95, data.confidence || 70),
-                reasoning: `You've chosen this ${data.count || 1} time${(data.count || 1) > 1 ? 's' : ''} before`,
-                isLearned: true
+      // Advanced context detection
+      const context = {
+        timeOfDay: hour < 6 ? 'early_morning' : 
+                   hour < 10 ? 'morning_rush' :
+                   hour < 12 ? 'late_morning' :
+                   hour < 14 ? 'lunch_time' :
+                   hour < 17 ? 'afternoon' :
+                   hour < 20 ? 'evening_rush' :
+                   hour < 22 ? 'evening' : 'night',
+        dayType: isWeekday ? 'weekday' : 'weekend',
+        urgencyLevel: 'high' // Since this is emergency transport
+      };
+      
+      // Enhanced smart destination suggestions with learned patterns
+      let suggestions = [];
+      
+      // Check for learned destinations for this time context
+      try {
+        const timeContextKey = hour.toString();
+        if (learnedDestinations && learnedDestinations[timeContextKey]) {
+          const learnedForTime = learnedDestinations[timeContextKey];
+          
+          // Add top learned destinations with safety checks
+          if (learnedForTime && typeof learnedForTime === 'object') {
+            Object.entries(learnedForTime)
+              .filter(([dest, data]) => {
+                return data && 
+                       typeof data === 'object' && 
+                       typeof data.confidence === 'number' && 
+                       typeof data.count === 'number' &&
+                       data.confidence > 60 && 
+                       data.count > 1;
+              })
+              .sort(([,a], [,b]) => {
+                const aScore = (a.confidence || 0) * (a.count || 0);
+                const bScore = (b.confidence || 0) * (b.count || 0);
+                return bScore - aScore;
+              })
+              .slice(0, 2)
+              .forEach(([destination, data]) => {
+                suggestions.push({
+                  name: destination,
+                  address: destination,
+                  context: '🧠 Your usual spot',
+                  confidence: Math.min(95, data.confidence || 70),
+                  reasoning: `You've chosen this ${data.count || 1} time${(data.count || 1) > 1 ? 's' : ''} before`,
+                  isLearned: true
+                });
               });
-            });
+          }
         }
+      } catch (error) {
+        console.error('Error processing learned destinations:', error);
+        // Continue with default suggestions
       }
-    } catch (error) {
-      console.error('Error processing learned destinations:', error);
-      // Continue with default suggestions
-    }
-    
-    // Add default suggestions based on context if we don't have enough learned ones
-    if (context.timeOfDay === 'morning_rush' && context.dayType === 'weekday') {
-      const defaults = [
-        { 
-          name: 'Office - Gachibowli', 
-          address: 'HITEC City, Hyderabad', 
-          context: '🏢 Work commute', 
-          confidence: 95,
-          reasoning: 'Most likely destination during weekday morning rush'
-        },
-        { 
-          name: 'Airport', 
-          address: 'Rajiv Gandhi International Airport', 
-          context: '✈️ Travel urgency', 
-          confidence: 80,
-          reasoning: 'Flight departure stress'
-        },
-        { 
-          name: 'Hospital - Apollo', 
-          address: 'Apollo Hospital, Jubilee Hills', 
-          context: '🏥 Medical emergency', 
-          confidence: 70,
-          reasoning: 'Emergency medical situation'
-        }
-      ];
       
-      // Add defaults that aren't already in learned suggestions
-      defaults.forEach(defaultDest => {
-        if (!suggestions.some(s => s.name.includes(defaultDest.name.split(' - ')[0]))) {
-          suggestions.push(defaultDest);
-        }
-      });
+      // Add default suggestions based on context if we don't have enough learned ones
+      if (context.timeOfDay === 'morning_rush' && context.dayType === 'weekday') {
+        const defaults = [
+          { 
+            name: 'Office - Gachibowli', 
+            address: 'HITEC City, Hyderabad', 
+            context: '🏢 Work commute', 
+            confidence: 95,
+            reasoning: 'Most likely destination during weekday morning rush'
+          },
+          { 
+            name: 'Airport', 
+            address: 'Rajiv Gandhi International Airport', 
+            context: '✈️ Travel urgency', 
+            confidence: 80,
+            reasoning: 'Flight departure stress'
+          },
+          { 
+            name: 'Hospital - Apollo', 
+            address: 'Apollo Hospital, Jubilee Hills', 
+            context: '🏥 Medical emergency', 
+            confidence: 70,
+            reasoning: 'Emergency medical situation'
+          }
+        ];
+        
+        // Add defaults that aren't already in learned suggestions
+        defaults.forEach(defaultDest => {
+          if (!suggestions.some(s => s.name.includes(defaultDest.name.split(' - ')[0]))) {
+            suggestions.push(defaultDest);
+          }
+        });
+        
+        return suggestions.slice(0, 3);
+      }
       
-      return suggestions.slice(0, 3);
-    }
-    } catch (error) {
-      console.error('Error in getContextualDestinations:', error);
-      // Return fallback suggestions
+      if (context.timeOfDay === 'evening_rush') {
+        return [
+          { 
+            name: 'Home - Kondapur', 
+            address: 'Kondapur, Hyderabad', 
+            context: '🏠 Going home', 
+            confidence: 90,
+            reasoning: 'End of workday commute'
+          },
+          { 
+            name: 'Metro Station', 
+            address: 'Ameerpet Metro', 
+            context: '🚇 Quick transit', 
+            confidence: 85,
+            reasoning: 'Avoid traffic congestion'
+          },
+          { 
+            name: 'Shopping Mall', 
+            address: 'Forum Sujana Mall', 
+            context: '🛍️ Evening plans', 
+            confidence: 60,
+            reasoning: 'After-work activities'
+          }
+        ];
+      }
+      
+      if (context.timeOfDay === 'lunch_time') {
+        return [
+          { 
+            name: 'Restaurant District', 
+            address: 'Banjara Hills', 
+            context: '🍽️ Lunch meeting', 
+            confidence: 80,
+            reasoning: 'Business lunch timing'
+          },
+          { 
+            name: 'Office - Return', 
+            address: 'HITEC City, Hyderabad', 
+            context: '🏢 Back to work', 
+            confidence: 70,
+            reasoning: 'Return from lunch break'
+          },
+          { 
+            name: 'Airport', 
+            address: 'Rajiv Gandhi International Airport', 
+            context: '✈️ Flight departure', 
+            confidence: 90,
+            reasoning: 'Critical flight timing'
+          }
+        ];
+      }
+      
+      if (context.dayType === 'weekend') {
+        return [
+          { 
+            name: 'Airport', 
+            address: 'Rajiv Gandhi International Airport', 
+            context: '✈️ Weekend travel', 
+            confidence: 85,
+            reasoning: 'Vacation or weekend trip'
+          },
+          { 
+            name: 'Mall/Entertainment', 
+            address: 'GVK One Mall', 
+            context: '🎉 Weekend fun', 
+            confidence: 70,
+            reasoning: 'Weekend leisure activities'
+          },
+          { 
+            name: 'Hospital - Emergency', 
+            address: 'Apollo Hospital', 
+            context: '🚑 Medical urgency', 
+            confidence: 80,
+            reasoning: 'Weekend medical emergency'
+          }
+        ];
+      }
+      
+      // Night time scenarios
+      if (context.timeOfDay === 'night') {
+        return [
+          { 
+            name: 'Home - Safe Return', 
+            address: 'Your Location', 
+            context: '🏠 Safe journey home', 
+            confidence: 95,
+            reasoning: 'Late night safety priority'
+          },
+          { 
+            name: 'Hospital - Emergency', 
+            address: 'Nearest Emergency Hospital', 
+            context: '🚑 Medical emergency', 
+            confidence: 90,
+            reasoning: 'Night medical urgency'
+          },
+          { 
+            name: 'Airport', 
+            address: 'Rajiv Gandhi International Airport', 
+            context: '✈️ Late flight', 
+            confidence: 80,
+            reasoning: 'Red-eye flight departure'
+          }
+        ];
+      }
+      
+      // Default fallback
       return [
         { 
           name: 'Airport', 
@@ -142,6 +251,13 @@ function EmergencyTransportModal({ onClose, userLocation }) {
           reasoning: 'Most common emergency destination'
         },
         { 
+          name: 'Railway Station', 
+          address: 'Secunderabad Railway Station', 
+          context: '🚂 Rail connect', 
+          confidence: 70,
+          reasoning: 'Alternative travel option'
+        },
+        { 
           name: 'City Center', 
           address: 'Begumpet, Hyderabad', 
           context: '🏙️ Central area', 
@@ -149,141 +265,37 @@ function EmergencyTransportModal({ onClose, userLocation }) {
           reasoning: 'General city access'
         }
       ];
-    }
-  };
-    
-    if (context.timeOfDay === 'evening_rush') {
+    } catch (error) {
+      console.error('Error in getContextualDestinations:', error);
       return [
         { 
-          name: 'Home - Kondapur', 
-          address: 'Kondapur, Hyderabad', 
-          context: '🏠 Going home', 
-          confidence: 90,
-          reasoning: 'End of workday commute'
-        },
-        { 
-          name: 'Metro Station', 
-          address: 'Ameerpet Metro', 
-          context: '🚇 Quick transit', 
+          name: 'Airport', 
+          address: 'Rajiv Gandhi International Airport', 
+          context: '✈️ Emergency travel', 
           confidence: 85,
-          reasoning: 'Avoid traffic congestion'
-        },
-        { 
-          name: 'Shopping Mall', 
-          address: 'Forum Sujana Mall', 
-          context: '🛍️ Evening plans', 
-          confidence: 60,
-          reasoning: 'After-work activities'
+          reasoning: 'Common emergency destination'
         }
       ];
     }
-    
-    if (context.timeOfDay === 'lunch_time') {
-      return [
-        { 
-          name: 'Restaurant District', 
-          address: 'Banjara Hills', 
-          context: '🍽️ Lunch meeting', 
-          confidence: 80,
-          reasoning: 'Business lunch timing'
-        },
-        { 
-          name: 'Office - Return', 
-          address: 'HITEC City, Hyderabad', 
-          context: '🏢 Back to work', 
-          confidence: 70,
-          reasoning: 'Return from lunch break'
-        },
-        { 
-          name: 'Airport', 
-          address: 'Rajiv Gandhi International Airport', 
-          context: '✈️ Flight departure', 
-          confidence: 90,
-          reasoning: 'Critical flight timing'
-        }
-      ];
-    }
-    
-    if (context.dayType === 'weekend') {
-      return [
-        { 
-          name: 'Airport', 
-          address: 'Rajiv Gandhi International Airport', 
-          context: '✈️ Weekend travel', 
-          confidence: 85,
-          reasoning: 'Vacation or weekend trip'
-        },
-        { 
-          name: 'Mall/Entertainment', 
-          address: 'GVK One Mall', 
-          context: '🎉 Weekend fun', 
-          confidence: 70,
-          reasoning: 'Weekend leisure activities'
-        },
-        { 
-          name: 'Hospital - Emergency', 
-          address: 'Apollo Hospital', 
-          context: '🚑 Medical urgency', 
-          confidence: 80,
-          reasoning: 'Weekend medical emergency'
-        }
-      ];
-    }
-    
-    // Night time scenarios
-    if (context.timeOfDay === 'night') {
-      return [
-        { 
-          name: 'Home - Safe Return', 
-          address: 'Your Location', 
-          context: '🏠 Safe journey home', 
-          confidence: 95,
-          reasoning: 'Late night safety priority'
-        },
-        { 
-          name: 'Hospital - Emergency', 
-          address: 'Nearest Emergency Hospital', 
-          context: '🚑 Medical emergency', 
-          confidence: 90,
-          reasoning: 'Night medical urgency'
-        },
-        { 
-          name: 'Airport', 
-          address: 'Rajiv Gandhi International Airport', 
-          context: '✈️ Late flight', 
-          confidence: 80,
-          reasoning: 'Red-eye flight departure'
-        }
-      ];
-    }
-    
-    // Default fallback
-    return [
-      { 
-        name: 'Airport', 
-        address: 'Rajiv Gandhi International Airport', 
-        context: '✈️ Travel hub', 
-        confidence: 85,
-        reasoning: 'Most common emergency destination'
-      },
-      { 
-        name: 'Railway Station', 
-        address: 'Secunderabad Railway Station', 
-        context: '🚂 Rail connect', 
-        confidence: 70,
-        reasoning: 'Alternative travel option'
-      },
-      { 
-        name: 'City Center', 
-        address: 'Begumpet, Hyderabad', 
-        context: '🏙️ Central area', 
-        confidence: 60,
-        reasoning: 'General city access'
-      }
-    ];
   };
   
-  const contextualDestinations = getContextualDestinations();
+  const contextualDestinations = (() => {
+    try {
+      const destinations = getContextualDestinations();
+      return Array.isArray(destinations) ? destinations : [];
+    } catch (error) {
+      console.error('Error getting contextual destinations:', error);
+      return [
+        { 
+          name: 'Airport', 
+          address: 'Rajiv Gandhi International Airport', 
+          context: '✈️ Emergency travel', 
+          confidence: 85,
+          reasoning: 'Common emergency destination'
+        }
+      ];
+    }
+  })();
 
   // Enhanced transport options with better UX
   const [loadingProgress, setLoadingProgress] = useState(0);
