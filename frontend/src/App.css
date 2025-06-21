@@ -2678,9 +2678,9 @@ body {
 }
 
 .transport-stats {
-  position: absolute;
+  position: fixed; /* ✅ Consistent with zoom controls for proper alignment */
   bottom: var(--space-md);
-  left: calc(var(--space-md) + 48px); /* Position to the right of custom zoom controls (40px + 8px gap) */
+  left: calc(var(--space-md) + 52px); /* Position to the right of zoom controls (40px width + 12px gap) */
   z-index: 1500; /* Lower than zoom controls to avoid overlap */
   animation: slideInUp 0.5s ease-out;
 }
@@ -3177,15 +3177,16 @@ body {
   
   /* Adjust transport stats spacing on mobile */
   .transport-stats {
-    left: calc(var(--space-sm) + 44px) !important; /* Closer on mobile (36px + 8px gap) */
+    left: calc(var(--space-sm) + 48px) !important; /* Closer on mobile (36px zoom + 12px gap) */
+    bottom: var(--space-sm) !important; /* Consistent with zoom controls */
   }
 }
 
 /* Intent Action Buttons (Floating Action Buttons) */
 .intent-action-buttons {
   position: fixed;
-  bottom: 24px;
-  right: 24px;
+  bottom: var(--space-md); /* ✅ Consistent spacing */
+  right: var(--space-md);
   z-index: 5000;
   display: flex;
   flex-direction: column;
@@ -10052,8 +10053,8 @@ body {
 
 .contextual-fab-container {
   position: fixed;
-  bottom: 24px;
-  right: 24px;
+  bottom: var(--space-md); /* ✅ Consistent spacing with other bottom elements */
+  right: var(--space-md);
   z-index: 5000;
   display: flex;
   flex-direction: column;
@@ -10430,8 +10431,8 @@ body {
 /* Mobile responsiveness */
 @media (max-width: 768px) {
   .contextual-fab-container {
-    bottom: 80px;
-    right: 16px;
+    bottom: calc(var(--space-sm) + 60px); /* Above mobile nav bars + spacing */
+    right: var(--space-sm); /* Consistent spacing */
   }
   
   .main-fab {
