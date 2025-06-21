@@ -4,6 +4,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { config } from '../config/env';
 import { getRoute } from '../services/routingService';
+import CustomZoomControls from './CustomZoomControls';
 
 // Fix for default markers in Leaflet with React
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
@@ -294,7 +295,7 @@ function MapView({
         zoom={zoom}
         style={{ width: '100%', height: '100%' }}
         ref={mapRef}
-        zoomControl={showControls} // Disable default zoom controls when showControls is false
+        zoomControl={false} // Always disable default, use custom controls
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -306,6 +307,9 @@ function MapView({
         {onZoomChange && <MapZoomHandler zoom={zoom} onZoomChange={onZoomChange} />}
         {onMapMove && <MapMoveHandler onMapMove={onMapMove} />}
         <MapCenterHandler center={center} allowUserInteraction={true} />
+        
+        {/* Custom zoom controls - always visible */}
+        {showControls && <CustomZoomControls />}
         
         {/* Render route polylines */}
         {routeLines.map((route, index) => (

@@ -14,6 +14,8 @@ function MapPinContextMenu({
   onBookRide
 }) {
   const menuRef = useRef(null);
+  const [placeName, setPlaceName] = useState(null);
+  const [isLoadingPlace, setIsLoadingPlace] = useState(false);
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -42,6 +44,68 @@ function MapPinContextMenu({
       return () => document.removeEventListener('keydown', handleEscKey);
     }
   }, [isVisible, onClose]);
+
+  // Reverse geocode to get place name
+  useEffect(() => {
+    if (isVisible && coordinates) {
+      setIsLoadingPlace(true);
+      setPlaceName(null);
+      
+      const fetchPlaceName = async () => {
+        try {
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?` + 
+            new URLSearchParams({
+              lat: coordinates.lat.toString(),
+              lon: coordinates.lng.toString(),
+              format: 'json',
+              addressdetails: '1',
+              'accept-language': 'en'
+            }),
+            {
+              headers: {
+                'User-Agent': 'RideShareMVP/1.0'
+              }
+            }
+          );
+
+          if (response.ok) {
+            const data = await response.json();
+            const address = data.address || {};
+            
+            // Create a meaningful place name
+            const road = address.road || address.pedestrian || address.footway;
+            const area = address.neighbourhood || address.suburb || address.village || address.town || address.city;
+            const displayName = data.display_name;
+            
+            let placeName = '';
+            if (road && area) {
+              placeName = `${road}, ${area}`;
+            } else if (road) {
+              placeName = road;
+            } else if (area) {
+              placeName = area;
+            } else if (displayName) {
+              // Use first two parts of display name
+              const parts = displayName.split(',').slice(0, 2);
+              placeName = parts.join(',').trim();
+            }
+            
+            setPlaceName(placeName || 'Unknown location');
+          }
+        } catch (error) {
+          console.error('Reverse geocoding error:', error);
+          setPlaceName('Location lookup failed');
+        } finally {
+          setIsLoadingPlace(false);
+        }
+      };
+      
+      // Debounce the request slightly
+      const timeoutId = setTimeout(fetchPlaceName, 300);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [isVisible, coordinates]);
 
   if (!isVisible || !position || !coordinates) return null;
 
@@ -72,7 +136,10 @@ function MapPinContextMenu({
         <div className="pin-location-info">
           <span className="pin-icon">📍</span>
           <div className="pin-coordinates">
-            {formatCoordinate(coordinates.lat)}, {formatCoordinate(coordinates.lng)}
+            {isLoadingPlace 
+              ? 'Finding location...' 
+              : placeName || `${formatCoordinate(coordinates.lat)}, ${formatCoordinate(coordinates.lng)}`
+            }
           </div>
         </div>
         <button 
@@ -119,15 +186,6 @@ function MapPinContextMenu({
           <span className="action-icon">🚌</span>
           <span className="action-text">Find Transport</span>
           <span className="action-description">Bus, Train, Rideshare</span>
-        </button>
-
-        <button 
-          className="pin-action-btn how-to-go"
-          onClick={() => handleAction('how-to-go', onHowToGo)}
-        >
-          <span className="action-icon">🗺️</span>
-          <span className="action-text">How to go</span>
-          <span className="action-description">Find transport options</span>
         </button>
 
         <button 

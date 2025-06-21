@@ -2680,7 +2680,7 @@ body {
 .transport-stats {
   position: absolute;
   bottom: var(--space-md);
-  left: calc(var(--space-md) + 80px); /* Position to the right of zoom controls */
+  left: calc(var(--space-md) + 48px); /* Position to the right of custom zoom controls (40px + 8px gap) */
   z-index: 1500; /* Lower than zoom controls to avoid overlap */
   animation: slideInUp 0.5s ease-out;
 }
@@ -3177,7 +3177,7 @@ body {
   
   /* Adjust transport stats spacing on mobile */
   .transport-stats {
-    left: calc(var(--space-sm) + 60px) !important; /* Closer on mobile */
+    left: calc(var(--space-sm) + 44px) !important; /* Closer on mobile (36px + 8px gap) */
   }
 }
 

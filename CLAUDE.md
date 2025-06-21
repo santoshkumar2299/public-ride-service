@@ -2,6 +2,20 @@
 
 ## ⚠️ CRITICAL RULES - NEVER VIOLATE
 
+### **RULE #0: ALWAYS CONSULT HUMAN_UX_PRINCIPLES.md FIRST**
+**🧠 MANDATORY: Before implementing ANY UI component or interaction, ALWAYS read and follow HUMAN_UX_PRINCIPLES.md**
+
+**Key Human Principles to NEVER forget:**
+- ✅ **ESC key MUST close all modals/overlays - NO EXCEPTIONS**
+- ✅ **Users MUST always have a clear path back to home**
+- ✅ **Position elements where humans expect them (near click, not center screen)**
+- ✅ **Keep everything within visible viewport bounds**
+- ✅ **Design for the human holding the device, not the computer running the code**
+
+**Recent Example Fix:**
+- ❌ `position: absolute` for zoom controls (relative to container)
+- ✅ `position: fixed` for zoom controls (relative to viewport for human visibility)
+
 ### **RULE #1: ALWAYS CHECK EXISTING COMPONENTS FIRST**
 **Before implementing ANY new component, MANDATORY steps:**
 
@@ -268,60 +282,70 @@ grep -r "import.*LocationSearch" frontend/src/
 
 #### **Pin Context Menu Enhancement:**
 ```jsx
-// Enhanced pin menu with ride booking
-<button className="pin-action-btn book-ride featured">
-  <span className="action-icon">🚗</span>
-  <span className="action-text">Book Ride</span>
-  <span className="action-description">Compare Uber, Lyft & more</span>
+// Community-focused transport options
+<button className="pin-action-btn find-transport featured">
+  <span className="action-icon">🚌</span>
+  <span className="action-text">Find Transport</span>
+  <span className="action-description">Bus, Train, Rideshare</span>
 </button>
 ```
 
-#### **RideBookingModal.jsx - Google Maps-style Interface:**
-- **Multiple Providers**: Uber, Lyft, Local Taxi in organized groups
-- **Real-time Loading**: Simulates API calls with loading spinner
-- **Price Comparison**: Shows price ranges (e.g., "$12-15", "$20-25")
-- **Wait Times**: Displays estimated arrival times (3-8 min)
-- **Vehicle Types**: UberX, Uber Comfort, Lyft XL, Premium Taxi
-- **Capacity Info**: Seat counts (4 seats, 6 seats)
-- **Route Display**: Current location → Destination visualization
+#### **CommunityTransportModal.jsx - Sustainable Transport Interface:**
 
-#### **Key Features (Google Maps Patterns):**
-- ✅ **Integrated Booking** - No app switching required
-- ✅ **Provider Comparison** - Side-by-side price/time comparison
-- ✅ **Selection Feedback** - Highlights chosen ride with summary
-- ✅ **One-click Booking** - Instant booking confirmation
-- ✅ **Mobile Responsive** - Perfect on all screen sizes
+**🚌 Public Transport Options:**
+- **Bus Routes**: Real route numbers, timings, crowding levels
+- **Metro/Train**: Direct routes with carbon footprint data
+- **Local Transit**: Community-verified transport options
+
+**🤝 Community Ridesharing:**
+- **Shared Auto-rickshaw**: Fill empty seats (2/3 seats filled)
+- **Car Pools**: Community members offering rides
+- **Rider Profiles**: Names and ratings for trust building
+
+**🚶 Active Transport:**
+- **Walking**: Free, health benefits (+50 cal), zero emissions
+- **Bike Share**: Community bike sharing with availability info
+
+#### **Key Features (Mission-Aligned):**
+- ✅ **Sustainability Focus** - Carbon footprint for each option
+- ✅ **Community Integration** - Real rider names and shared rides
+- ✅ **Public Transport Priority** - Buses/trains shown first
+- ✅ **Health Benefits** - Calorie burn info for active transport
+- ✅ **Cost Transparency** - Affordable options (₹5-₹30 range)
+- ✅ **Crowding Info** - Real-time occupancy levels
 
 #### **User Flow:**
-1. **Map Pin Click** → Context menu with "Book Ride" button
-2. **Modal Opens** → Loading spinner while "finding options"
-3. **Provider Selection** → Choose from Uber/Lyft/Local options
-4. **Ride Selection** → Pick vehicle type with price/time info
-5. **Instant Booking** → One-click confirmation and booking
+1. **Map Pin Click** → Context menu with "Find Transport" button
+2. **Modal Opens** → Loading "sustainable transport options"
+3. **Category Selection** → Public Transport, Community Rides, Active Transport
+4. **Option Selection** → Pick based on time, cost, sustainability
+5. **Join/Select** → "Join Ride" for rideshares, "Select Transport" for public
 
-#### **CSS Styling:**
-- **Featured Button**: Green gradient with shimmer animation effect
-- **Provider Groups**: Organized sections with brand logos
-- **Selection States**: Visual feedback with borders and highlights
-- **Mobile Optimization**: Responsive design for all devices
+#### **Sustainability Indicators:**
+- **Carbon Footprint**: 🌱 0.1kg-0.4kg CO₂ (Walking: 0kg)
+- **Health Impact**: 💪 +30-50 calories for active transport
+- **Community Trust**: 👥 Crowding levels, rider ratings
+- **Cost Efficiency**: ₹5-₹30 vs commercial ride ₹200+
 
 #### **Integration Points:**
-- `MapPinContextMenu.jsx` - Added "Book Ride" button
-- `RideBookingModal.jsx` - Complete booking interface
-- `LiveCityMap.jsx` - Modal state management and handlers
-- `MapWithPinning.jsx` - Event propagation and coordination
+- `MapPinContextMenu.jsx` - "Find Transport" button (blue theme)
+- `CommunityTransportModal.jsx` - Sustainable transport interface
+- `LiveCityMap.jsx` - Community transport state management
+- `MapWithPinning.jsx` - Community-focused event handling
 
-**Benefits:**
-- ✅ **Quick Access** - Book rides directly from map pins
-- ✅ **Price Transparency** - Compare all options before booking
-- ✅ **Time Efficiency** - No need to switch between multiple apps
-- ✅ **User Experience** - Familiar Google Maps-style interface
+**Mission Benefits:**
+- ✅ **Maximize Vehicle Utilization** - Fill existing transport capacity
+- ✅ **Support Public Transit** - Promote buses, trains, metro
+- ✅ **Community Building** - Connect neighbors for shared rides
+- ✅ **Environmental Impact** - Reduce carbon emissions through sharing
+- ✅ **Human-Centered** - Focus on user needs, not behavior modification
 
 **Testing Requirements:**
-- [ ] Test ride booking flow from pin click to confirmation
-- [ ] Verify provider comparison displays correctly
-- [ ] Check mobile responsiveness on various screen sizes
-- [ ] Ensure modal animations and loading states work smoothly
+- [ ] Test community transport flow from pin to selection
+- [ ] Verify sustainability indicators display correctly
+- [ ] Check public transport options prioritization
+- [ ] Ensure community rideshare trust features work
+- [ ] Validate carbon footprint calculations
 
 ---
 
