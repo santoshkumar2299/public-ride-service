@@ -120,6 +120,28 @@ function MapCenterHandler({ center, zoom }) {
   return null;
 }
 
+// Component to handle map movement events
+function MapMoveHandler({ onMapMove }) {
+  const map = useMap();
+  
+  useEffect(() => {
+    if (onMapMove) {
+      const handleMoveEnd = () => {
+        const center = map.getCenter();
+        onMapMove({ lat: center.lat, lng: center.lng });
+      };
+      
+      map.on('moveend', handleMoveEnd);
+      
+      return () => {
+        map.off('moveend', handleMoveEnd);
+      };
+    }
+  }, [map, onMapMove]);
+  
+  return null;
+}
+
 function MapView({ 
   center = [config.defaultMapCenter.lat, config.defaultMapCenter.lng], 
   zoom = config.defaultMapZoom, 
@@ -129,7 +151,8 @@ function MapView({
   onMapClick = null,
   height = '400px',
   showControls = true,
-  onZoomChange = null // New prop for external zoom control
+  onZoomChange = null, // New prop for external zoom control
+  onMapMove = null // New prop for map movement detection
 }) {
   const mapRef = useRef();
   const [routeLines, setRouteLines] = useState([]);
