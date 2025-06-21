@@ -21,14 +21,23 @@ function EmergencyTransportModal({ onClose, userLocation }) {
 
   // Enhanced contextual intelligence with pattern learning
   const getContextualDestinations = () => {
-    const now = new Date();
-    const hour = now.getHours();
-    const isWeekday = now.getDay() >= 1 && now.getDay() <= 5;
-    const dayOfWeek = now.getDay();
-    
-    // Load learned destination patterns
-    const learningData = JSON.parse(localStorage.getItem('transportLearningData') || '{}');
-    const learnedDestinations = learningData.destinations || {};
+    try {
+      const now = new Date();
+      const hour = now.getHours();
+      const isWeekday = now.getDay() >= 1 && now.getDay() <= 5;
+      const dayOfWeek = now.getDay();
+      
+      // Load learned destination patterns with safety
+      let learningData = {};
+      let learnedDestinations = {};
+      
+      try {
+        learningData = JSON.parse(localStorage.getItem('transportLearningData') || '{}');
+        learnedDestinations = learningData.destinations || {};
+      } catch (storageError) {
+        console.error('Error reading learning data:', storageError);
+        learnedDestinations = {};
+      }
     
     // Advanced context detection
     const context = {
@@ -47,25 +56,43 @@ function EmergencyTransportModal({ onClose, userLocation }) {
     let suggestions = [];
     
     // Check for learned destinations for this time context
-    const timeContextKey = hour.toString();
-    if (learnedDestinations[timeContextKey]) {
-      const learnedForTime = learnedDestinations[timeContextKey];
-      
-      // Add top learned destinations
-      Object.entries(learnedForTime)
-        .filter(([dest, data]) => data.confidence > 60 && data.count > 1)
-        .sort(([,a], [,b]) => (b.confidence * b.count) - (a.confidence * a.count))
-        .slice(0, 2)
-        .forEach(([destination, data]) => {
-          suggestions.push({
-            name: destination,
-            address: destination,
-            context: '🧠 Your usual spot',
-            confidence: Math.min(95, data.confidence),
-            reasoning: `You've chosen this ${data.count} time${data.count > 1 ? 's' : ''} before`,
-            isLearned: true
-          });
-        });
+    try {
+      const timeContextKey = hour.toString();
+      if (learnedDestinations && learnedDestinations[timeContextKey]) {
+        const learnedForTime = learnedDestinations[timeContextKey];
+        
+        // Add top learned destinations with safety checks
+        if (learnedForTime && typeof learnedForTime === 'object') {
+          Object.entries(learnedForTime)
+            .filter(([dest, data]) => {
+              return data && 
+                     typeof data === 'object' && 
+                     typeof data.confidence === 'number' && 
+                     typeof data.count === 'number' &&
+                     data.confidence > 60 && 
+                     data.count > 1;
+            })
+            .sort(([,a], [,b]) => {
+              const aScore = (a.confidence || 0) * (a.count || 0);
+              const bScore = (b.confidence || 0) * (b.count || 0);
+              return bScore - aScore;
+            })
+            .slice(0, 2)
+            .forEach(([destination, data]) => {
+              suggestions.push({
+                name: destination,
+                address: destination,
+                context: '🧠 Your usual spot',
+                confidence: Math.min(95, data.confidence || 70),
+                reasoning: `You've chosen this ${data.count || 1} time${(data.count || 1) > 1 ? 's' : ''} before`,
+                isLearned: true
+              });
+            });
+        }
+      }
+    } catch (error) {
+      console.error('Error processing learned destinations:', error);
+      // Continue with default suggestions
     }
     
     // Add default suggestions based on context if we don't have enough learned ones
@@ -103,6 +130,27 @@ function EmergencyTransportModal({ onClose, userLocation }) {
       
       return suggestions.slice(0, 3);
     }
+    } catch (error) {
+      console.error('Error in getContextualDestinations:', error);
+      // Return fallback suggestions
+      return [
+        { 
+          name: 'Airport', 
+          address: 'Rajiv Gandhi International Airport', 
+          context: '✈️ Travel hub', 
+          confidence: 85,
+          reasoning: 'Most common emergency destination'
+        },
+        { 
+          name: 'City Center', 
+          address: 'Begumpet, Hyderabad', 
+          context: '🏙️ Central area', 
+          confidence: 60,
+          reasoning: 'General city access'
+        }
+      ];
+    }
+  };
     
     if (context.timeOfDay === 'evening_rush') {
       return [
@@ -242,9 +290,17 @@ function EmergencyTransportModal({ onClose, userLocation }) {
   const [loadingSteps, setLoadingSteps] = useState([]);
   
   const generateTransportOptions = (dest) => {
-    setIsLoading(true);
-    setLoadingProgress(0);
-    setLoadingSteps([]);
+    try {
+      console.log('Generating transport options for:', dest);
+      
+      if (!dest || (!dest.name && !dest.address)) {
+        console.error('Invalid destination:', dest);
+        return;
+      }
+      
+      setIsLoading(true);
+      setLoadingProgress(0);
+      setLoadingSteps([]);
     
     // Progressive loading with transparency (reduces anxiety)
     const steps = [
@@ -353,6 +409,13 @@ function EmergencyTransportModal({ onClose, userLocation }) {
         setIsLoading(false);
       }
     }, steps[currentStep]?.delay || 300);
+    
+    } catch (error) {
+      console.error('Error generating transport options:', error);
+      setIsLoading(false);
+      // Show error state or fallback
+      alert('Unable to load transport options. Please try again.');
+    }
   };
 
   // MANDATORY: ESC key support with smart context awareness (following HUMAN_UX_PRINCIPLES.md)
@@ -603,12 +666,18 @@ function EmergencyTransportModal({ onClose, userLocation }) {
             <div className="address-search-container">
               <LocationSearch
                 onLocationSelect={(location) => {
+                  console.log('LocationSearch selected:', location);
+                  
+                  // Safely handle location data
+                  const address = location.address || location.name || 'Selected Location';
                   const destination = {
-                    name: location.address.split(',')[0].trim() || location.address,
-                    address: location.address,
+                    name: address.split(',')[0].trim() || address,
+                    address: address,
                     lat: location.lat,
-                    lng: location.lng
+                    lng: location.lng || location.lon
                   };
+                  
+                  console.log('Processed destination:', destination);
                   handleDestinationSelect(destination);
                 }}
                 placeholder="Where are you rushing to?"

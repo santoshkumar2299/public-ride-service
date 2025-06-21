@@ -434,6 +434,17 @@ function LiveCityMap({
           onClose={onScenarioComplete}
         />
       )}
+
+      {/* Quick Travel Modal */}
+      <QuickTravelModal
+        isVisible={showQuickTravelModal}
+        onClose={() => {
+          setShowQuickTravelModal(false);
+          setEditLocationCoords(null);
+        }}
+        onTravelTo={handleTravelTo}
+        currentLocation={editLocationCoords}
+      />
     </div>
   );
 }
