@@ -167,6 +167,45 @@ const initDB = () => {
       FOREIGN KEY (route_id) REFERENCES transport_routes (id)
     )`);
 
+    // Bus spot reports (when users spot a bus at a location)
+    db.run(`CREATE TABLE IF NOT EXISTS bus_spot_reports (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id TEXT NOT NULL,
+      bus_number TEXT NOT NULL,
+      route_id INTEGER,
+      latitude REAL NOT NULL,
+      longitude REAL NOT NULL,
+      confidence_level TEXT DEFAULT 'medium', -- high, medium, low
+      additional_info TEXT,
+      reported_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      is_verified INTEGER DEFAULT 0, -- 0=unverified, 1=verified, -1=false
+      verification_count INTEGER DEFAULT 0,
+      accuracy_score REAL DEFAULT 0.5,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users (id),
+      FOREIGN KEY (route_id) REFERENCES transport_routes (id)
+    )`);
+
+    // Bus report verifications (community verification of spot reports)
+    db.run(`CREATE TABLE IF NOT EXISTS bus_report_verifications (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      report_id INTEGER NOT NULL,
+      verifier_user_id TEXT NOT NULL,
+      is_accurate INTEGER NOT NULL, -- 1=accurate, 0=inaccurate
+      comments TEXT,
+      verified_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (report_id) REFERENCES bus_spot_reports (id),
+      FOREIGN KEY (verifier_user_id) REFERENCES users (id)
+    )`);
+
+    // Indexes for better performance on location and time queries
+    db.run(`CREATE INDEX IF NOT EXISTS idx_bus_spot_reports_location 
+            ON bus_spot_reports (latitude, longitude)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_bus_spot_reports_time 
+            ON bus_spot_reports (reported_at)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_bus_spot_reports_bus 
+            ON bus_spot_reports (bus_number, route_id)`);
+
     // Initialize default transport types
     insertDefaultTransportTypes();
   });

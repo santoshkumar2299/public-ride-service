@@ -990,6 +990,151 @@ app.get('/api/search/destination', async (req, res) => {
   }
 });
 
+// BUS REPORTING API ENDPOINTS
+
+// Report a bus spotted at a location (one-time report)
+app.post('/api/reports/bus-spot', async (req, res) => {
+  try {
+    const { 
+      bus_number, 
+      route_id, 
+      location, 
+      confidence, 
+      additional_info, 
+      user_id, 
+      timestamp 
+    } = req.body;
+    
+    if (!bus_number || !location || !user_id) {
+      return res.status(400).json({ error: 'bus_number, location, and user_id are required' });
+    }
+
+    // Insert bus spot report
+    const spotReportSql = `
+      INSERT INTO bus_spot_reports (
+        user_id, bus_number, route_id, latitude, longitude, 
+        confidence_level, additional_info, reported_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    db.run(spotReportSql, [
+      user_id,
+      bus_number,
+      route_id,
+      location.lat,
+      location.lng,
+      confidence || 'medium',
+      additional_info,
+      timestamp || new Date().toISOString()
+    ], function(err) {
+      if (err) {
+        console.error('Error inserting spot report:', err);
+        return res.status(500).json({ error: 'Failed to save spot report' });
+      }
+
+      // Add to social score
+      socialScoreService.addContribution(user_id, { 
+        type: 'spot_report',
+        confidence: confidence 
+      });
+
+      res.status(201).json({ 
+        message: 'Bus spot reported successfully',
+        report_id: this.lastID,
+        social_points_earned: confidence === 'high' ? 5 : confidence === 'medium' ? 3 : 1
+      });
+    });
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get recent bus spot reports for map display
+app.get('/api/reports/bus-spots', async (req, res) => {
+  try {
+    const { bounds, minutes_ago = 30 } = req.query;
+    
+    let sql = `
+      SELECT 
+        bsr.*,
+        u.username as reporter_name,
+        uss.reputation_level,
+        r.route_name,
+        r.start_point,
+        r.end_point
+      FROM bus_spot_reports bsr
+      LEFT JOIN users u ON bsr.user_id = u.id
+      LEFT JOIN user_social_scores uss ON bsr.user_id = uss.user_id
+      LEFT JOIN transport_routes r ON bsr.route_id = r.id
+      WHERE datetime(bsr.reported_at) > datetime('now', '-${minutes_ago} minutes')
+        AND bsr.is_verified != 0
+    `;
+    
+    let params = [];
+    
+    if (bounds) {
+      const boundsObj = JSON.parse(bounds);
+      sql += ` AND bsr.latitude BETWEEN ? AND ?
+               AND bsr.longitude BETWEEN ? AND ?`;
+      params.push(boundsObj.south, boundsObj.north, boundsObj.west, boundsObj.east);
+    }
+    
+    sql += ` ORDER BY bsr.reported_at DESC LIMIT 50`;
+
+    db.all(sql, params, (err, rows) => {
+      if (err) {
+        console.error('Error fetching spot reports:', err);
+        return res.status(500).json({ error: 'Failed to fetch reports' });
+      }
+
+      res.json({ spot_reports: rows || [] });
+    });
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Verify a bus spot report
+app.post('/api/reports/bus-spots/:id/verify', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { user_id, is_accurate } = req.body;
+    
+    if (!user_id) {
+      return res.status(400).json({ error: 'user_id is required' });
+    }
+
+    // Insert verification
+    const verifySql = `
+      INSERT INTO bus_report_verifications (
+        report_id, verifier_user_id, is_accurate, verified_at
+      ) VALUES (?, ?, ?, ?)
+    `;
+
+    db.run(verifySql, [
+      id, user_id, is_accurate ? 1 : 0, new Date().toISOString()
+    ], function(err) {
+      if (err) {
+        console.error('Error inserting verification:', err);
+        return res.status(500).json({ error: 'Failed to save verification' });
+      }
+
+      // Update social scores for both reporter and verifier
+      // Add logic to update social scores based on verification
+
+      res.json({ 
+        message: 'Verification recorded',
+        verification_id: this.lastID
+      });
+    });
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 initDB();
 
 app.listen(PORT, () => {

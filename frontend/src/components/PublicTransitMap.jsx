@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import { useTransport } from '../contexts/TransportContext';
-import LocationSearch from './LocationSearch';
+import BusReportingInterface from './BusReportingInterface';
 import './PublicTransitMap.css';
 
 // Custom bus marker icons
@@ -73,6 +73,9 @@ const PublicTransitMap = ({ user, onNavigate }) => {
   // Polling
   const [isPolling, setIsPolling] = useState(true);
   const pollingIntervalRef = useRef(null);
+  
+  // Bus reporting
+  const [showReporting, setShowReporting] = useState(false);
 
   // Get user's current location
   useEffect(() => {
@@ -356,6 +359,41 @@ const PublicTransitMap = ({ user, onNavigate }) => {
     setMapZoom(Math.min(mapZoom + 2, 18));
   };
 
+  // Handle bus reporting
+  const handleBusReport = async (reportData) => {
+    try {
+      const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      
+      let endpoint = '';
+      if (reportData.type === 'spot') {
+        endpoint = '/api/reports/bus-spot';
+      } else if (reportData.type === 'traveling') {
+        endpoint = '/api/tracking/start';
+      }
+
+      const response = await fetch(`${API_BASE}${endpoint}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(reportData),
+      });
+
+      if (response.ok) {
+        // Refresh bus data to show the new report
+        fetchLiveBusesInViewport();
+        
+        // Show success message
+        console.log('Bus report submitted successfully');
+      } else {
+        throw new Error('Failed to submit report');
+      }
+    } catch (error) {
+      console.error('Error submitting bus report:', error);
+      throw error;
+    }
+  };
+
   // Get appropriate placeholder text for search input
   const getSearchPlaceholder = () => {
     switch (searchType) {
@@ -535,6 +573,29 @@ const PublicTransitMap = ({ user, onNavigate }) => {
             </div>
           )}
         </div>
+
+        {/* Floating Action Button for Bus Reporting */}
+        <button 
+          className="fab-report-bus"
+          onClick={() => setShowReporting(true)}
+          title="Report Bus Location"
+        >
+          <span className="fab-icon">📍</span>
+          <span className="fab-text">Report Bus</span>
+        </button>
+
+        {/* Bus Reporting Interface */}
+        {showReporting && (
+          <>
+            <div className="reporting-overlay" onClick={() => setShowReporting(false)} />
+            <BusReportingInterface
+              user={user}
+              currentLocation={userLocation}
+              onClose={() => setShowReporting(false)}
+              onReport={handleBusReport}
+            />
+          </>
+        )}
       </div>
     </div>
   );
