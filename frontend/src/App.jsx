@@ -10,7 +10,7 @@ import ActiveRides from './components/ActiveRides'
 import Profile from './components/Profile'
 import LoadingSkeleton from './components/LoadingSkeleton'
 import TransportModeSelector from './components/TransportModeSelector'
-import PublicTransitTracker from './components/PublicTransitTracker'
+import PublicTransitMap from './components/PublicTransitMap'
 import { TransportProvider, useTransport } from './contexts/TransportContext'
 import { CarIcon } from './components/Icons'
 
@@ -162,10 +162,10 @@ function AppContent() {
         return <Profile user={user} onLogout={handleLogout} />;
       case 'home':
       default:
-        // If public transport is selected, show the transit tracker
+        // If public transport is selected, show the transit map
         if (isPublicTransport) {
           return (
-            <PublicTransitTracker 
+            <PublicTransitMap 
               user={user}
               onNavigate={handleNavigate}
             />

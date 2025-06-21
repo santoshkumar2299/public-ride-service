@@ -615,6 +615,327 @@ app.get('/api/predictions/route/:routeId/stop/:stopId', async (req, res) => {
   }
 });
 
+// MAP-BASED API ENDPOINTS
+
+// Get live buses in map viewport
+app.post('/api/tracking/live/viewport', async (req, res) => {
+  try {
+    const { transport_type_id, bounds, zoom_level } = req.body;
+    
+    if (!transport_type_id || !bounds) {
+      return res.status(400).json({ error: 'transport_type_id and bounds are required' });
+    }
+
+    // Get live tracking data within bounds
+    const sql = `
+      SELECT 
+        t.id,
+        t.user_id,
+        t.route_id,
+        t.current_lat,
+        t.current_lng,
+        t.speed,
+        t.direction,
+        t.last_update,
+        r.route_number,
+        r.route_name,
+        r.start_point,
+        r.end_point
+      FROM live_tracking t
+      JOIN transport_routes r ON t.route_id = r.id
+      WHERE r.transport_type_id = ?
+        AND t.is_active = 1
+        AND t.current_lat BETWEEN ? AND ?
+        AND t.current_lng BETWEEN ? AND ?
+        AND datetime(t.last_update) > datetime('now', '-5 minutes')
+      ORDER BY t.last_update DESC
+    `;
+
+    db.all(sql, [
+      transport_type_id,
+      bounds.south,
+      bounds.north, 
+      bounds.west,
+      bounds.east
+    ], (err, rows) => {
+      if (err) {
+        console.error('Error fetching viewport buses:', err);
+        return res.status(500).json({ error: 'Failed to fetch buses' });
+      }
+
+      res.json({ 
+        buses: rows || [],
+        bounds: bounds,
+        zoom_level: zoom_level,
+        count: rows ? rows.length : 0
+      });
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Search by bus number
+app.get('/api/search/bus-number', async (req, res) => {
+  try {
+    const { query, lat, lng, radius = 5 } = req.query;
+    
+    if (!query) {
+      return res.status(400).json({ error: 'query parameter required' });
+    }
+
+    let distanceClause = '';
+    let params = [`%${query}%`];
+    
+    if (lat && lng) {
+      // Add distance calculation using Haversine formula
+      distanceClause = `
+        AND (
+          6371 * acos(
+            cos(radians(?)) * cos(radians(t.current_lat)) * 
+            cos(radians(t.current_lng) - radians(?)) + 
+            sin(radians(?)) * sin(radians(t.current_lat))
+          )
+        ) <= ?
+      `;
+      params.push(parseFloat(lat), parseFloat(lng), parseFloat(lat), parseFloat(radius));
+    }
+
+    const sql = `
+      SELECT 
+        r.route_number,
+        r.route_name,
+        r.start_point,
+        r.end_point,
+        COUNT(t.id) as buses_count,
+        AVG(t.current_lat) as center_lat,
+        AVG(t.current_lng) as center_lng,
+        MIN(
+          CASE WHEN ? IS NOT NULL AND ? IS NOT NULL THEN
+            6371 * acos(
+              cos(radians(?)) * cos(radians(t.current_lat)) * 
+              cos(radians(t.current_lng) - radians(?)) + 
+              sin(radians(?)) * sin(radians(t.current_lat))
+            )
+          ELSE NULL END
+        ) as distance
+      FROM transport_routes r
+      LEFT JOIN live_tracking t ON r.id = t.route_id AND t.is_active = 1
+      WHERE r.route_number LIKE ?
+        ${distanceClause}
+      GROUP BY r.id, r.route_number, r.route_name
+      HAVING buses_count > 0
+      ORDER BY 
+        CASE WHEN ? IS NOT NULL THEN distance END ASC,
+        buses_count DESC,
+        r.route_number ASC
+      LIMIT 10
+    `;
+
+    // Build parameters array for the complex query
+    const searchParams = [
+      lat, lng, lat, lng, lat, // For distance calculation in SELECT
+      ...params, // Main query params (query + optional distance filter)
+      lat // For ORDER BY distance
+    ];
+
+    db.all(sql, searchParams, (err, rows) => {
+      if (err) {
+        console.error('Error searching bus numbers:', err);
+        return res.status(500).json({ error: 'Search failed' });
+      }
+
+      const results = rows.map(row => ({
+        display_name: `Bus ${row.route_number}`,
+        subtitle: `${row.route_name} (${row.start_point} → ${row.end_point})`,
+        buses_count: row.buses_count,
+        distance: row.distance,
+        route_bounds: row.center_lat && row.center_lng ? {
+          center_lat: row.center_lat,
+          center_lng: row.center_lng
+        } : null
+      }));
+
+      res.json({ results });
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Search by route name
+app.get('/api/search/route', async (req, res) => {
+  try {
+    const { query, lat, lng, radius = 5 } = req.query;
+    
+    if (!query) {
+      return res.status(400).json({ error: 'query parameter required' });
+    }
+
+    let distanceClause = '';
+    let params = [`%${query}%`, `%${query}%`];
+    
+    if (lat && lng) {
+      distanceClause = `
+        AND (
+          6371 * acos(
+            cos(radians(?)) * cos(radians(t.current_lat)) * 
+            cos(radians(t.current_lng) - radians(?)) + 
+            sin(radians(?)) * sin(radians(t.current_lat))
+          )
+        ) <= ?
+      `;
+      params.push(parseFloat(lat), parseFloat(lng), parseFloat(lat), parseFloat(radius));
+    }
+
+    const sql = `
+      SELECT 
+        r.route_number,
+        r.route_name,
+        r.start_point,
+        r.end_point,
+        COUNT(t.id) as buses_count,
+        AVG(t.current_lat) as center_lat,
+        AVG(t.current_lng) as center_lng,
+        MIN(
+          CASE WHEN ? IS NOT NULL AND ? IS NOT NULL THEN
+            6371 * acos(
+              cos(radians(?)) * cos(radians(t.current_lat)) * 
+              cos(radians(t.current_lng) - radians(?)) + 
+              sin(radians(?)) * sin(radians(t.current_lat))
+            )
+          ELSE NULL END
+        ) as distance
+      FROM transport_routes r
+      LEFT JOIN live_tracking t ON r.id = t.route_id AND t.is_active = 1
+      WHERE (r.route_name LIKE ? OR r.start_point LIKE ? OR r.end_point LIKE ?)
+        ${distanceClause}
+      GROUP BY r.id, r.route_number, r.route_name
+      HAVING buses_count > 0
+      ORDER BY 
+        CASE WHEN ? IS NOT NULL THEN distance END ASC,
+        buses_count DESC,
+        r.route_name ASC
+      LIMIT 10
+    `;
+
+    const searchParams = [
+      lat, lng, lat, lng, lat, // For distance calculation in SELECT
+      ...params, `%${query}%`, // Main query params  
+      lat // For ORDER BY distance
+    ];
+
+    db.all(sql, searchParams, (err, rows) => {
+      if (err) {
+        console.error('Error searching routes:', err);
+        return res.status(500).json({ error: 'Search failed' });
+      }
+
+      const results = rows.map(row => ({
+        display_name: row.route_name,
+        subtitle: `Bus ${row.route_number} • ${row.start_point} → ${row.end_point}`,
+        buses_count: row.buses_count,
+        distance: row.distance,
+        route_bounds: row.center_lat && row.center_lng ? {
+          center_lat: row.center_lat,
+          center_lng: row.center_lng
+        } : null
+      }));
+
+      res.json({ results });
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Search by destination
+app.get('/api/search/destination', async (req, res) => {
+  try {
+    const { query, lat, lng, radius = 5 } = req.query;
+    
+    if (!query) {
+      return res.status(400).json({ error: 'query parameter required' });
+    }
+
+    let distanceClause = '';
+    let params = [`%${query}%`, `%${query}%`];
+    
+    if (lat && lng) {
+      distanceClause = `
+        AND (
+          6371 * acos(
+            cos(radians(?)) * cos(radians(s.latitude)) * 
+            cos(radians(s.longitude) - radians(?)) + 
+            sin(radians(?)) * sin(radians(s.latitude))
+          )
+        ) <= ?
+      `;
+      params.push(parseFloat(lat), parseFloat(lng), parseFloat(lat), parseFloat(radius));
+    }
+
+    const sql = `
+      SELECT 
+        s.stop_name,
+        r.route_number,
+        r.route_name,
+        r.start_point,
+        r.end_point,
+        COUNT(t.id) as buses_count,
+        s.latitude as stop_lat,
+        s.longitude as stop_lng,
+        MIN(
+          CASE WHEN ? IS NOT NULL AND ? IS NOT NULL THEN
+            6371 * acos(
+              cos(radians(?)) * cos(radians(s.latitude)) * 
+              cos(radians(s.longitude) - radians(?)) + 
+              sin(radians(?)) * sin(radians(s.latitude))
+            )
+          ELSE NULL END
+        ) as distance
+      FROM transport_stops s
+      JOIN transport_routes r ON s.route_id = r.id
+      LEFT JOIN live_tracking t ON r.id = t.route_id AND t.is_active = 1
+      WHERE (s.stop_name LIKE ? OR r.end_point LIKE ?)
+        ${distanceClause}
+      GROUP BY s.id, s.stop_name, r.route_number, r.route_name
+      ORDER BY 
+        CASE WHEN ? IS NOT NULL THEN distance END ASC,
+        buses_count DESC,
+        s.stop_name ASC
+      LIMIT 10
+    `;
+
+    const searchParams = [
+      lat, lng, lat, lng, lat, // For distance calculation in SELECT
+      ...params, // Main query params
+      lat // For ORDER BY distance
+    ];
+
+    db.all(sql, searchParams, (err, rows) => {
+      if (err) {
+        console.error('Error searching destinations:', err);
+        return res.status(500).json({ error: 'Search failed' });
+      }
+
+      const results = rows.map(row => ({
+        display_name: row.stop_name,
+        subtitle: `Bus ${row.route_number} • ${row.route_name}`,
+        buses_count: row.buses_count,
+        distance: row.distance,
+        route_bounds: {
+          center_lat: row.stop_lat,
+          center_lng: row.stop_lng
+        }
+      }));
+
+      res.json({ results });
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 initDB();
 
 app.listen(PORT, () => {
