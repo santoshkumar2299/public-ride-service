@@ -1,11 +1,69 @@
 import { useState, useEffect, useRef } from 'react';
+import FloatingCard from './inline-tools/FloatingCard';
+import EmergencyFloatingCard from './inline-tools/EmergencyFloatingCard';
 
-function ContextualFAB({ onScenarioSelect, user, activeScenario, onScenarioComplete }) {
+function ContextualFAB({ onScenarioSelect, user, activeScenario, onScenarioComplete, userLocation, currentView, onNavigate, onNotification }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showContextPanel, setShowContextPanel] = useState(false);
   const [activePanel, setActivePanel] = useState(null);
   const [panelPosition, setPanelPosition] = useState({ bottom: 80, right: 16 });
+  const [showFloatingCard, setShowFloatingCard] = useState(false);
+  const [showEmergencyCard, setShowEmergencyCard] = useState(false);
   const fabRef = useRef(null);
+
+  // Content preservation functions
+  const checkForUnsavedContent = () => {
+    try {
+      // Check for any form inputs with content
+      const inputs = document.querySelectorAll('input[type="text"], input[type="email"], textarea, select');
+      const hasContent = Array.from(inputs).some(input => {
+        return input.value && input.value.trim().length > 0;
+      });
+
+      // Check for any unsaved draft states (common in forms)
+      const hasDrafts = localStorage.getItem('draft_data') !== null;
+      
+      return hasContent || hasDrafts;
+    } catch (error) {
+      console.warn('Error checking for unsaved content:', error);
+      return false;
+    }
+  };
+
+  const preserveUserContent = () => {
+    try {
+      // Auto-save all form content to localStorage
+      const contentBackup = {
+        timestamp: new Date().toISOString(),
+        url: window.location.href,
+        forms: {}
+      };
+
+      // Capture all form data
+      const inputs = document.querySelectorAll('input[type="text"], input[type="email"], textarea, select');
+      Array.from(inputs).forEach((input, index) => {
+        if (input.value && input.value.trim().length > 0) {
+          contentBackup.forms[`field_${index}_${input.name || input.id || 'unnamed'}`] = {
+            type: input.type || input.tagName.toLowerCase(),
+            value: input.value,
+            placeholder: input.placeholder || '',
+            label: input.getAttribute('aria-label') || ''
+          };
+        }
+      });
+
+      // Only save if there's actual content
+      if (Object.keys(contentBackup.forms).length > 0) {
+        localStorage.setItem('fab_navigation_backup', JSON.stringify(contentBackup));
+        console.log('💾 User content preserved:', Object.keys(contentBackup.forms).length, 'fields');
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.warn('Error preserving content:', error);
+      return false;
+    }
+  };
 
   const intentActions = [
     {
@@ -88,7 +146,11 @@ function ContextualFAB({ onScenarioSelect, user, activeScenario, onScenarioCompl
   useEffect(() => {
     const handleEscKey = (event) => {
       if (event.key === 'Escape') {
-        if (showContextPanel) {
+        if (showEmergencyCard) {
+          setShowEmergencyCard(false);
+        } else if (showFloatingCard) {
+          setShowFloatingCard(false);
+        } else if (showContextPanel) {
           handleClosePanel();
         } else if (isExpanded) {
           setIsExpanded(false);
@@ -98,9 +160,80 @@ function ContextualFAB({ onScenarioSelect, user, activeScenario, onScenarioCompl
 
     document.addEventListener('keydown', handleEscKey);
     return () => document.removeEventListener('keydown', handleEscKey);
-  }, [showContextPanel, isExpanded]);
+  }, [showContextPanel, isExpanded, showFloatingCard, showEmergencyCard]);
 
   const handleActionClick = (action) => {
+    console.log('🎯 Action clicked:', action.id, action.label);
+    
+    // Direct actions with navigation handling
+    if (action.id === 'spot') {
+      // Spot Transport - handle navigation and FloatingCard
+      setIsExpanded(false);
+      
+      // If not on map view, navigate first
+      if (currentView !== 'home') {
+        console.log('📍 Navigating to map for spot transport...');
+        
+        // Check for unsaved content and preserve it
+        const hasUnsavedContent = checkForUnsavedContent();
+        if (hasUnsavedContent) {
+          preserveUserContent();
+          if (onNotification) {
+            onNotification('💾 Content saved • Navigating to map for bus spotting...');
+          }
+        } else {
+          if (onNotification) {
+            onNotification('📍 Navigating to map for bus spotting...');
+          }
+        }
+        
+        onNavigate('home'); // Navigate to map
+        
+        // Open FloatingCard after navigation
+        setTimeout(() => {
+          setShowFloatingCard(true);
+        }, 200);
+      } else {
+        // Already on map, open FloatingCard directly
+        setShowFloatingCard(true);
+      }
+      return;
+    }
+    
+    if (action.id === 'emergency') {
+      // Emergency Transport - handle navigation and EmergencyFloatingCard
+      setIsExpanded(false);
+      
+      // If not on map view, navigate first
+      if (currentView !== 'home') {
+        
+        // Check for unsaved content and preserve it
+        const hasUnsavedContent = checkForUnsavedContent();
+        if (hasUnsavedContent) {
+          preserveUserContent();
+          if (onNotification) {
+            onNotification('💾 Content saved • Navigating to map for emergency transport...');
+          }
+        } else {
+          if (onNotification) {
+            onNotification('🚨 Navigating to map for emergency transport...');
+          }
+        }
+        
+        onNavigate('home'); // Navigate to map
+        
+        // Open EmergencyFloatingCard after navigation
+        setTimeout(() => {
+          setShowEmergencyCard(true);
+        }, 200);
+      } else {
+        // Already on map, open EmergencyFloatingCard directly
+        setShowEmergencyCard(true);
+      }
+      return;
+    }
+    
+    // Default behavior - open contextual panel for other actions
     setActivePanel(action);
     setShowContextPanel(true);
     setIsExpanded(false);
@@ -143,7 +276,7 @@ function ContextualFAB({ onScenarioSelect, user, activeScenario, onScenarioCompl
         <div 
           className={`fab-action-buttons ${isExpanded ? 'visible' : ''}`}
           style={{
-            zIndex: 10001,
+            zIndex: 15002,
             pointerEvents: 'auto'
           }}
         >
@@ -155,7 +288,7 @@ function ContextualFAB({ onScenarioSelect, user, activeScenario, onScenarioCompl
                 '--action-color': action.color,
                 '--animation-delay': `${index * 0.1}s`,
                 position: 'relative',
-                zIndex: 10000,
+                zIndex: 15003,
                 pointerEvents: 'auto'
               }}
               className="fab-action-btn"
@@ -205,6 +338,23 @@ function ContextualFAB({ onScenarioSelect, user, activeScenario, onScenarioCompl
           />
         </div>
       )}
+
+      {/* FloatingCard for Spot Transport */}
+      {showFloatingCard && (
+        <FloatingCard 
+          userLocation={userLocation}
+          onClose={() => setShowFloatingCard(false)}
+        />
+      )}
+
+      {/* EmergencyFloatingCard for Emergency Transport */}
+      {showEmergencyCard && (
+        <EmergencyFloatingCard 
+          userLocation={userLocation}
+          onClose={() => setShowEmergencyCard(false)}
+        />
+      )}
+      
     </>
   );
 }

@@ -1,0 +1,184 @@
+/* Inline Tools Demo - Control Panel */
+.demo-controls {
+  position: fixed;
+  top: 80px;
+  right: 16px;
+  width: 300px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  z-index: 9999;
+  overflow: hidden;
+  border: 2px solid #e5e7eb;
+}
+
+.demo-header {
+  padding: 16px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  text-align: center;
+}
+
+.demo-header h3 {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.demo-header p {
+  margin: 0;
+  font-size: 12px;
+  opacity: 0.9;
+}
+
+.demo-buttons {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.demo-btn {
+  background: #f8f9fa;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  padding: 12px 16px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+  font-weight: 500;
+  color: #495057;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.demo-btn:hover {
+  background: #e9ecef;
+  border-color: #6c757d;
+}
+
+.demo-btn.active {
+  background: #e3f2fd;
+  border-color: #2196f3;
+  color: #1976d2;
+}
+
+.demo-desc {
+  font-size: 11px;
+  font-weight: 400;
+  opacity: 0.7;
+}
+
+.pattern-info {
+  padding: 16px;
+  background: #f8f9fa;
+  border-top: 1px solid #e9ecef;
+}
+
+.pattern-details {
+  font-size: 12px;
+}
+
+.pattern-details strong {
+  display: block;
+  margin-bottom: 8px;
+  color: #495057;
+  font-size: 13px;
+}
+
+.pattern-details ul {
+  margin: 0;
+  padding-left: 16px;
+  list-style: none;
+}
+
+.pattern-details li {
+  margin-bottom: 4px;
+  position: relative;
+}
+
+.pattern-details li:before {
+  content: '';
+  position: absolute;
+  left: -12px;
+  top: 6px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #6c757d;
+}
+
+.pattern-details p {
+  margin: 0;
+  color: #6c757d;
+  font-style: italic;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .demo-controls {
+    top: 60px;
+    right: 8px;
+    left: 8px;
+    width: auto;
+    max-width: none;
+  }
+  
+  .demo-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  
+  .demo-btn {
+    padding: 8px 12px;
+    font-size: 12px;
+    text-align: center;
+  }
+  
+  .demo-desc {
+    font-size: 10px;
+  }
+}
+
+/* Tablet */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .demo-controls {
+    width: 280px;
+    right: 12px;
+  }
+}
+
+/* Large Desktop */
+@media (min-width: 1200px) {
+  .demo-controls {
+    width: 320px;
+    right: 24px;
+  }
+}
+
+/* Hide on very small screens */
+@media (max-width: 480px) {
+  .demo-controls {
+    display: none;
+  }
+}
+
+/* Smooth transitions */
+.demo-controls {
+  transition: all 0.3s ease;
+}
+
+.demo-controls:hover {
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+}
+
+/* Scrollable pattern info on small screens */
+@media (max-height: 600px) {
+  .pattern-info {
+    max-height: 120px;
+    overflow-y: auto;
+  }
+}

@@ -1,5 +1,115 @@
 # 🚨 CLAUDE DEVELOPMENT GUIDELINES
 
+## 🤖 MULTI-AGENT COORDINATION SYSTEM
+
+### **Agent Architecture Overview**
+**CRITICAL**: This project operates with specialized agents, each managing specific domains and maintaining persistent context even after terminal crashes.
+
+### **Agent Startup Protocol**
+When `get context of project` is requested, **AUTOMATICALLY START ALL AGENTS**:
+
+```bash
+# Agent startup commands (run in parallel)
+claude --agent USER_PROFILE_AGENT --context-file AGENT_CONTEXTS/USER_PROFILE_AGENT.md
+claude --agent TRANSPORT_AGENT --context-file AGENT_CONTEXTS/TRANSPORT_AGENT.md  
+claude --agent MAP_AGENT --context-file AGENT_CONTEXTS/MAP_AGENT.md
+claude --agent EMERGENCY_AGENT --context-file AGENT_CONTEXTS/EMERGENCY_AGENT.md
+claude --agent COMMUNITY_AGENT --context-file AGENT_CONTEXTS/COMMUNITY_AGENT.md
+```
+
+### **Agent Specializations**
+
+#### **👤 USER_PROFILE_AGENT** - `AGENT_CONTEXTS/USER_PROFILE_AGENT.md`
+- **Responsibilities**: User management, profiles, authentication, community trust
+- **Components**: Profile.jsx, Login.jsx, HumanityLeaderboard.jsx, OptimizationPreferences.jsx
+- **Services**: socialScoreService.js, user APIs, community features
+- **Database**: users, user_social_scores, community_verifications
+
+#### **🚌 TRANSPORT_AGENT** - `AGENT_CONTEXTS/TRANSPORT_AGENT.md`
+- **Responsibilities**: Multi-modal transport, routing, real-time tracking
+- **Components**: TransportModeSelector.jsx, PublicTransitMap.jsx, RouteMap.jsx, JourneyPlanner.jsx
+- **Services**: transportService.js, routingService.js, transport APIs
+- **Database**: transport_types, transport_routes, live_tracking
+
+#### **🗺️ MAP_AGENT** - `AGENT_CONTEXTS/MAP_AGENT.md`
+- **Responsibilities**: Map interface, location services, spatial interactions
+- **Components**: LiveCityMap.jsx, MapView.jsx, LocationSearch.jsx, MapPinContextMenu.jsx
+- **Services**: Nominatim integration, coordinateUtils.js
+- **Focus**: Location privacy, geographic intelligence
+
+#### **🚨 EMERGENCY_AGENT** - `AGENT_CONTEXTS/EMERGENCY_AGENT.md`
+- **Responsibilities**: Emergency transport, urgent scenarios, crisis response
+- **Components**: EmergencyTransportModal.jsx, emergency FAB integration
+- **UX**: Research-driven hero layouts, cognitive load reduction
+- **Focus**: Stress reduction, progressive trust, fast response
+
+#### **🤝 COMMUNITY_AGENT** - `AGENT_CONTEXTS/COMMUNITY_AGENT.md`
+- **Responsibilities**: Community features, crowdsourced data, social coordination
+- **Components**: CommunityHelpModal.jsx, BusReportingInterface.jsx, BusStopHelper.jsx
+- **Services**: Community verification, social scoring
+- **Focus**: Mutual aid, transport data collection, trust building
+
+### **Context Synchronization Protocol**
+
+#### **Every Prompt-Response Cycle MUST:**
+1. **Read agent context file** before responding
+2. **Update agent context file** after responding
+3. **Coordinate with other agents** when needed
+4. **Maintain persistent state** across terminal sessions
+
+#### **🚨 CRITICAL ENFORCEMENT: Context Updates are MANDATORY**
+- **EVERY agent MUST update their context after EVERY interaction**
+- **NO EXCEPTIONS** - This is required for multi-agent persistence
+- **Protocol**: Read Context → Process Request → Update Context → Respond
+- **Failure to update context breaks the entire multi-agent system**
+
+#### **Context Update Format:**
+```markdown
+## 🔄 Last Interaction Update
+**Date**: 2025-01-21  
+**Action**: [What was done]  
+**Files Modified**: [List of changed files]  
+**Coordination**: [Other agents involved]  
+**Next Priority**: [What to do next]  
+**User Feedback**: [Any user input received]  
+```
+
+### **Agent Communication Channels**
+- **Shared State**: User session, transport preferences, location data
+- **Cross-Agent Events**: Emergency triggers, transport updates, community data
+- **Coordination Points**: Profile preferences → Transport options → Map display
+
+### **Terminal Crash Recovery**
+**When terminal crashes:**
+1. Agent reads its context file immediately
+2. Understands current project state
+3. Continues where left off
+4. Coordinates with other agents as needed
+
+### **Agent Activation Examples**
+
+**User Profile Request**: 
+→ USER_PROFILE_AGENT activates
+→ Reads USER_PROFILE_AGENT.md context
+→ Handles user management tasks
+→ Updates context file with actions taken
+
+**Transport Planning**: 
+→ TRANSPORT_AGENT + MAP_AGENT coordinate
+→ Both read their context files
+→ Share route and location data
+→ Update contexts with coordination results
+
+**Emergency Scenario**:
+→ EMERGENCY_AGENT prioritized
+→ Coordinates with TRANSPORT_AGENT for fast options
+→ Uses MAP_AGENT for location services
+→ All agents update contexts with emergency response
+
+---
+
+# 🚨 CLAUDE DEVELOPMENT GUIDELINES
+
 ## ⚠️ CRITICAL RULES - NEVER VIOLATE
 
 ### **RULE #0: ALWAYS CONSULT HUMAN_UX_PRINCIPLES.md FIRST**
@@ -102,9 +212,9 @@ Before any component implementation:
 
 ### **TESTING COMMANDS:**
 ```bash
-# Development servers (typically already running)
-# Frontend: http://localhost:5173 or 5174
-# Backend: http://localhost:3001
+# 🚨 STANDARD SERVER PORTS - NEVER CHANGE THESE:
+# Frontend: http://localhost:5173 (Vite dev server)
+# Backend: http://localhost:3001 (Node.js/Express server)
 
 # Check component usage
 grep -r "ComponentName" frontend/src/
@@ -114,6 +224,9 @@ npm run build
 ```
 
 ### **DEVELOPMENT ENVIRONMENT:**
+- **🚨 STANDARD SERVER PORTS - NEVER CHANGE:**
+  - **Frontend**: http://localhost:5173 (Vite dev server) 
+  - **Backend**: http://localhost:3001 (Node.js/Express server)
 - **Servers are typically running** - Frontend (Vite) and Backend (Node.js) are usually active during development
 - **No need to start servers** unless explicitly requested by user
 - **Hot reload enabled** - Changes reflect immediately in browser

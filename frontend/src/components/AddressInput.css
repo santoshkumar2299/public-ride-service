@@ -1,0 +1,466 @@
+/* 📍 UNIFIED ADDRESS INPUT COMPONENT */
+
+.address-input {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.address-input.compact {
+  gap: 8px;
+}
+
+.address-input.disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* Header Section */
+.address-input-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.address-input-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.required {
+  color: #F44336;
+  font-weight: 700;
+}
+
+.context-hint {
+  background: rgba(33, 150, 243, 0.08);
+  border-left: 3px solid #2196F3;
+  padding: 8px 12px;
+  border-radius: 0 6px 6px 0;
+}
+
+.hint-text {
+  font-size: 12px;
+  color: #1976D2;
+  font-weight: 500;
+}
+
+/* Location Selected State */
+.location-selected {
+  background: linear-gradient(135deg, #E8F5E8 0%, #F1F8E9 100%);
+  border: 1px solid #C8E6C9;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+}
+
+.location-info {
+  flex: 1;
+}
+
+.location-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #2E7D32;
+  margin-bottom: 4px;
+}
+
+.location-details {
+  font-size: 12px;
+  color: #4CAF50;
+  font-weight: 500;
+}
+
+.clear-location-btn {
+  background: rgba(46, 125, 50, 0.1);
+  border: 1px solid #C8E6C9;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  color: #2E7D32;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.clear-location-btn:hover {
+  background: rgba(46, 125, 50, 0.2);
+  border-color: #A5D6A7;
+  transform: scale(1.1);
+}
+
+/* Address Input Container */
+.address-input-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #F8F9FA;
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid #E8EAED;
+}
+
+/* GPS Detection */
+.gps-detecting {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: linear-gradient(135deg, #F3F8FF 0%, #E8F4FD 100%);
+  border-radius: 8px;
+  border: 1px solid #BBDEFB;
+}
+
+.detecting-animation {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.detecting-icon {
+  font-size: 20px;
+  position: relative;
+  z-index: 2;
+  animation: detecting-bounce 1.5s infinite;
+}
+
+@keyframes detecting-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+.pulse-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 32px;
+  height: 32px;
+  border: 2px solid #2196F3;
+  border-radius: 50%;
+  animation: detecting-pulse 2s infinite;
+}
+
+@keyframes detecting-pulse {
+  0% {
+    transform: translate(-50%, -50%) scale(0.8);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.4);
+    opacity: 0;
+  }
+}
+
+.detecting-text {
+  font-size: 13px;
+  color: #1976D2;
+  font-weight: 500;
+}
+
+/* GPS Error */
+.gps-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #FFEBEE;
+  border-radius: 6px;
+  border: 1px solid #FFCDD2;
+}
+
+.error-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.error-text {
+  font-size: 12px;
+  color: #C62828;
+  font-weight: 500;
+}
+
+/* Search Section */
+.search-section {
+  width: 100%;
+}
+
+/* Quick Actions */
+.quick-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.quick-action-btn {
+  background: white;
+  border: 1px solid #E0E0E0;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  justify-content: center;
+}
+
+.quick-action-btn:hover:not(:disabled) {
+  background: #F5F5F5;
+  border-color: #BDBDBD;
+  color: #333;
+}
+
+.quick-action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.gps-btn:hover:not(:disabled) {
+  background: rgba(33, 150, 243, 0.05);
+  border-color: #2196F3;
+  color: #1976D2;
+}
+
+.gps-btn.primary-focus {
+  background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+  color: white;
+  border-color: #1976D2;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
+}
+
+.gps-btn.primary-focus:hover:not(:disabled) {
+  background: linear-gradient(135deg, #1976D2 0%, #1565C0 100%);
+  box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
+}
+
+.advanced-btn:hover:not(:disabled) {
+  background: rgba(156, 39, 176, 0.05);
+  border-color: #9C27B0;
+  color: #7B1FA2;
+}
+
+.map-pin-btn:hover:not(:disabled) {
+  background: rgba(255, 152, 0, 0.05);
+  border-color: #FF9800;
+  color: #F57C00;
+}
+
+/* Manual Coordinates */
+.manual-coordinates {
+  background: white;
+  border-radius: 8px;
+  padding: 12px;
+  border: 1px solid #E0E0E0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.coord-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.coord-inputs input {
+  padding: 8px 12px;
+  border: 1px solid #E0E0E0;
+  border-radius: 6px;
+  font-size: 12px;
+  font-family: inherit;
+  transition: border-color 0.2s ease;
+}
+
+.coord-inputs input:focus {
+  outline: none;
+  border-color: #2196F3;
+  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
+}
+
+.coord-inputs input::placeholder {
+  color: #999;
+}
+
+.apply-coords-btn {
+  background: linear-gradient(135deg, #9C27B0 0%, #7B1FA2 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  align-self: flex-start;
+}
+
+.apply-coords-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #8E24AA 0%, #6A1B9A 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(156, 39, 176, 0.3);
+}
+
+.apply-coords-btn:disabled {
+  background: #E0E0E0;
+  color: #999;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Validation Error */
+.validation-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #FFEBEE;
+  border-radius: 6px;
+  border: 1px solid #FFCDD2;
+}
+
+.validation-error .error-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.validation-error .error-text {
+  font-size: 12px;
+  color: #C62828;
+  font-weight: 500;
+}
+
+/* Reward Preview */
+.reward-preview {
+  background: linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%);
+  border-radius: 6px;
+  padding: 8px 12px;
+  text-align: center;
+}
+
+.reward-text {
+  font-size: 11px;
+  color: #E65100;
+  font-weight: 600;
+}
+
+/* Compact Mode Adjustments */
+.address-input.compact .address-input-container {
+  padding: 12px;
+  gap: 8px;
+}
+
+.address-input.compact .location-selected {
+  padding: 12px;
+}
+
+.address-input.compact .context-hint {
+  padding: 6px 10px;
+}
+
+.address-input.compact .quick-actions {
+  gap: 6px;
+}
+
+.address-input.compact .quick-action-btn {
+  padding: 6px 10px;
+  font-size: 11px;
+}
+
+/* Mobile Optimizations */
+@media (max-width: 480px) {
+  .address-input-container {
+    padding: 12px;
+    gap: 10px;
+  }
+  
+  .location-selected {
+    padding: 12px;
+  }
+  
+  .quick-actions {
+    flex-direction: column;
+  }
+  
+  .quick-action-btn {
+    flex: none;
+    width: 100%;
+  }
+  
+  .coord-inputs {
+    grid-template-columns: 1fr;
+  }
+  
+  .context-hint {
+    padding: 6px 10px;
+  }
+  
+  .hint-text {
+    font-size: 11px;
+  }
+  
+  .detecting-text {
+    font-size: 12px;
+  }
+  
+  .location-name {
+    font-size: 13px;
+  }
+  
+  .location-details {
+    font-size: 11px;
+  }
+}
+
+/* Focus styles for accessibility */
+.quick-action-btn:focus,
+.clear-location-btn:focus,
+.apply-coords-btn:focus {
+  outline: 2px solid #2196F3;
+  outline-offset: 2px;
+}
+
+/* Dark mode support (if needed) */
+@media (prefers-color-scheme: dark) {
+  .address-input-container {
+    background: #2C2C2C;
+    border-color: #444;
+  }
+  
+  .quick-action-btn {
+    background: #333;
+    border-color: #555;
+    color: #CCC;
+  }
+  
+  .manual-coordinates {
+    background: #333;
+    border-color: #555;
+  }
+  
+  .coord-inputs input {
+    background: #2C2C2C;
+    border-color: #555;
+    color: #CCC;
+  }
+}
