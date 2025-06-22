@@ -105,3 +105,5 @@ build/
 .env.test
 .env.production
 
+frontend/test-results/
+frontend/playwright-report/
