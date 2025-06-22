@@ -1,0 +1,393 @@
+/* User Contribution History */
+.contribution-history {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.contribution-history.loading {
+  opacity: 0.6;
+}
+
+/* Stats Header */
+.contribution-stats {
+  background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+  border-radius: 16px;
+  padding: 24px;
+  color: white;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 16px rgba(33, 150, 243, 0.3);
+}
+
+.stats-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+.user-info h2 {
+  margin: 0 0 4px 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.user-info p {
+  margin: 0;
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.reputation-badge {
+  text-align: right;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  padding: 8px 12px;
+  backdrop-filter: blur(4px);
+}
+
+.reputation-level {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  opacity: 0.9;
+}
+
+.total-points {
+  display: block;
+  font-size: 16px;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 16px;
+}
+
+.stat-card {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.stat-icon {
+  display: block;
+  font-size: 20px;
+  margin-bottom: 8px;
+}
+
+.stat-value {
+  display: block;
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.stat-label {
+  display: block;
+  font-size: 11px;
+  opacity: 0.9;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Filters */
+.contribution-filters {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-group label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #666;
+}
+
+.filter-group select {
+  padding: 8px 12px;
+  border: 2px solid #E0E0E0;
+  border-radius: 8px;
+  font-size: 14px;
+  background: white;
+  color: #333;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.filter-group select:focus {
+  outline: none;
+  border-color: #2196F3;
+}
+
+/* Contribution List */
+.contribution-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.contribution-item {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid #E8EAED;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  transition: all 0.2s ease;
+}
+
+.contribution-item:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+
+.contribution-item.bus_spot {
+  border-left: 4px solid #2196F3;
+}
+
+.contribution-item.verification {
+  border-left: 4px solid #4CAF50;
+}
+
+.contribution-item.help_session {
+  border-left: 4px solid #FF9800;
+}
+
+.contribution-icon {
+  font-size: 24px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #F5F5F5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.contribution-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.contribution-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 4px;
+}
+
+.contribution-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+}
+
+.contribution-time {
+  font-size: 12px;
+  color: #999;
+  font-weight: 500;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+
+.contribution-description {
+  margin: 0 0 4px 0;
+  font-size: 14px;
+  color: #666;
+  font-weight: 500;
+}
+
+.contribution-notes {
+  margin: 0;
+  font-size: 13px;
+  color: #888;
+  font-style: italic;
+}
+
+.contribution-status {
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-badge.verified {
+  background: rgba(76, 175, 80, 0.1);
+  color: #4CAF50;
+  border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+.status-badge.pending {
+  background: rgba(255, 152, 0, 0.1);
+  color: #FF9800;
+  border: 1px solid rgba(255, 152, 0, 0.3);
+}
+
+.status-badge.accurate {
+  background: rgba(76, 175, 80, 0.1);
+  color: #4CAF50;
+  border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+.status-badge.disputed {
+  background: rgba(244, 67, 54, 0.1);
+  color: #F44336;
+  border: 1px solid rgba(244, 67, 54, 0.3);
+}
+
+.status-badge.completed {
+  background: rgba(33, 150, 243, 0.1);
+  color: #2196F3;
+  border: 1px solid rgba(33, 150, 243, 0.3);
+}
+
+/* Empty State */
+.empty-contributions {
+  text-align: center;
+  padding: 60px 20px;
+  color: #666;
+}
+
+.empty-icon {
+  font-size: 48px;
+  display: block;
+  margin-bottom: 16px;
+}
+
+.empty-contributions h3 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  color: #333;
+}
+
+.empty-contributions p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Loading Skeletons */
+.loading-skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading-shimmer 1.5s infinite;
+  border-radius: 8px;
+}
+
+@keyframes loading-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.loading-skeleton.stats {
+  height: 180px;
+  margin-bottom: 24px;
+}
+
+.loading-skeleton.filters {
+  height: 40px;
+  margin-bottom: 20px;
+}
+
+.loading-skeleton.item {
+  height: 80px;
+  margin-bottom: 12px;
+}
+
+.loading-list {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Mobile Optimizations */
+@media (max-width: 768px) {
+  .contribution-history {
+    padding: 16px;
+  }
+  
+  .contribution-stats {
+    padding: 20px;
+  }
+  
+  .stats-header {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .reputation-badge {
+    align-self: flex-start;
+  }
+  
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  
+  .stat-card {
+    padding: 12px;
+  }
+  
+  .contribution-filters {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .filter-group {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  
+  .filter-group select {
+    width: 100%;
+  }
+  
+  .contribution-item {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .contribution-header {
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .contribution-time {
+    margin-left: 0;
+  }
+}
