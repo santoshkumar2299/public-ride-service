@@ -102,6 +102,17 @@ function Header({
                   <ProfileIcon size={16} />
                   <span>Profile</span>
                 </button>
+
+                <button
+                  className="dropdown-item"
+                  onClick={() => {
+                    onNavigate('contributions')
+                    setShowUserMenu(false)
+                  }}
+                >
+                  <span style={{ fontSize: '16px' }}>🏆</span>
+                  <span>My Contributions</span>
+                </button>
               </div>
               
               <div className="dropdown-divider"></div>

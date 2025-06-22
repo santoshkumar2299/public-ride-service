@@ -22,8 +22,8 @@ export const config = {
   
   // Map Configuration
   defaultMapCenter: {
-    lat: parseFloat(import.meta.env.VITE_DEFAULT_MAP_CENTER_LAT) || 37.7749,
-    lng: parseFloat(import.meta.env.VITE_DEFAULT_MAP_CENTER_LNG) || -122.4194
+    lat: parseFloat(import.meta.env.VITE_DEFAULT_MAP_CENTER_LAT) || 17.4435,
+    lng: parseFloat(import.meta.env.VITE_DEFAULT_MAP_CENTER_LNG) || 78.3772
   },
   defaultMapZoom: parseInt(import.meta.env.VITE_DEFAULT_MAP_ZOOM) || 12,
   

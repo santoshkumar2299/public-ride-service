@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react';
 import { config } from '../config/env';
 import SavedPlaces from './SavedPlaces';
+import UserPreferences from './UserPreferences';
+import UserContributionHistory from './UserContributionHistory';
+import './UserPreferences.css';
+import './ProfileActions.css';
 
 function Profile({ user, onLogout }) {
   const [stats, setStats] = useState({
@@ -9,10 +13,19 @@ function Profile({ user, onLogout }) {
     activeRides: 0,
     pendingRequests: 0
   });
+  const [contributionStats, setContributionStats] = useState({
+    busSpots: 0,
+    verifications: 0,
+    helpSessions: 0,
+    totalPoints: 0
+  });
   const [isLoading, setIsLoading] = useState(true);
+  const [showPreferences, setShowPreferences] = useState(false);
+  const [showContributions, setShowContributions] = useState(false);
 
   useEffect(() => {
     fetchUserStats();
+    fetchContributionStats();
   }, [user.id]);
 
   const fetchUserStats = async () => {
@@ -39,6 +52,46 @@ function Profile({ user, onLogout }) {
       console.error('Error fetching user stats:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchContributionStats = async () => {
+    console.log('🔍 Fetching contribution stats for user:', user.id);
+    try {
+      // Fetch social score and stats
+      const socialResponse = await fetch(`/api/social/profile/${user.id}`);
+      const spotResponse = await fetch(`/api/users/${user.id}/history?type=spot_reports&timeRange=all`);
+      const verifyResponse = await fetch(`/api/users/${user.id}/history?type=verifications&timeRange=all`);
+      const helpResponse = await fetch(`/api/users/${user.id}/history?type=help_sessions&timeRange=all`);
+      
+      console.log('📊 API Response status:', { 
+        social: socialResponse.status, 
+        spots: spotResponse.status,
+        verify: verifyResponse.status,
+        help: helpResponse.status
+      });
+
+      const socialData = socialResponse.ok ? await socialResponse.json() : { profile: { total_points: 0 } };
+      const spotData = spotResponse.ok ? await spotResponse.json() : { reports: [] };
+      const verifyData = verifyResponse.ok ? await verifyResponse.json() : { verifications: [] };
+      const helpData = helpResponse.ok ? await helpResponse.json() : { sessions: [] };
+
+      console.log('📈 Contribution data received:', {
+        busSpots: spotData.reports?.length || 0,
+        verifications: verifyData.verifications?.length || 0,
+        helpSessions: helpData.sessions?.length || 0,
+        totalPoints: socialData.profile?.total_points || 0,
+        spotData: spotData.reports?.slice(0, 2) // Show first 2 for debugging
+      });
+
+      setContributionStats({
+        busSpots: spotData.reports?.length || 0,
+        verifications: verifyData.verifications?.length || 0,
+        helpSessions: helpData.sessions?.length || 0,
+        totalPoints: socialData.profile?.total_points || 0
+      });
+    } catch (error) {
+      console.error('Error fetching contribution stats:', error);
     }
   };
 
@@ -98,13 +151,89 @@ function Profile({ user, onLogout }) {
         )}
       </div>
 
+      {/* Community Contribution Stats */}
+      <div className="contribution-preview">
+        <h3>🏆 Community Contributions</h3>
+        <div className="contribution-stats-grid">
+          <div className="contribution-stat">
+            <span className="contrib-number">🚌 {contributionStats.busSpots}</span>
+            <span className="contrib-label">Bus Spots</span>
+          </div>
+          <div className="contribution-stat">
+            <span className="contrib-number">✅ {contributionStats.verifications}</span>
+            <span className="contrib-label">Verifications</span>
+          </div>
+          <div className="contribution-stat">
+            <span className="contrib-number">🤝 {contributionStats.helpSessions}</span>
+            <span className="contrib-label">Help Sessions</span>
+          </div>
+          <div className="contribution-stat">
+            <span className="contrib-number">⭐ {contributionStats.totalPoints}</span>
+            <span className="contrib-label">Total Points</span>
+          </div>
+        </div>
+        <button 
+          className="view-contributions-btn"
+          onClick={() => setShowContributions(true)}
+        >
+          📋 View All Contributions
+        </button>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="profile-actions">
+        <button 
+          className="preferences-btn"
+          onClick={() => setShowPreferences(true)}
+        >
+          ⚙️ Preferences
+        </button>
+        <button 
+          className="logout-btn"
+          onClick={handleLogout}
+        >
+          🚪 Logout
+        </button>
+      </div>
+
       {/* Content Sections */}
       <div className="profile-sections">
         {/* Saved Places - Compact Version */}
         <div className="section-card">
-          <SavedPlaces user={user} />
+          <h3>🏠 Saved Places</h3>
+          <p>No saved places yet. Add your favorite locations to get started!</p>
         </div>
       </div>
+
+      {/* User Preferences Modal */}
+      <UserPreferences 
+        user={user}
+        isOpen={showPreferences}
+        onClose={() => setShowPreferences(false)}
+      />
+
+      {/* User Contributions Modal */}
+      {showContributions && (
+        <div className="modal-overlay" onClick={() => setShowContributions(false)}>
+          <div className="modal-content contributions-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>My Contributions</h2>
+              <button 
+                className="modal-close-btn"
+                onClick={() => setShowContributions(false)}
+              >
+                ✕
+              </button>
+            </div>
+            <div className="modal-body">
+              <UserContributionHistory 
+                userId={user.id} 
+                user={user}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

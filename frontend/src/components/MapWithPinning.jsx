@@ -17,7 +17,12 @@ function MapWithPinning({
   onAddToFavorites,
   onMapMove,
   onEditLocation,
-  onBookRide
+  onBookRide,
+  onMapPin,
+  mapPinningMode,
+  onSelectLocation,
+  transportAnchor = null,
+  showTransportArea = false
 }) {
   const [pinnedLocation, setPinnedLocation] = useState(null);
   const [contextMenuVisible, setContextMenuVisible] = useState(false);
@@ -27,6 +32,12 @@ function MapWithPinning({
   // Handle map click to place pin and show context menu
   const handleMapClick = useCallback((event) => {
     const { lngLat } = event;
+    
+    // If in pinning mode, handle direct pinning
+    if (mapPinningMode && onMapPin) {
+      onMapPin({ lat: lngLat.lat, lng: lngLat.lng });
+      return; // Don't show context menu in pinning mode
+    }
     
     // Get click position relative to viewport for context menu positioning
     const clickX = event.originalEvent?.clientX || 0;
@@ -66,7 +77,7 @@ function MapWithPinning({
     setContextMenuVisible(true);
     
     console.log('Map clicked at:', lngLat);
-  }, []);
+  }, [mapPinningMode, onMapPin]);
 
   // Close context menu
   const handleCloseContextMenu = useCallback(() => {
@@ -124,6 +135,14 @@ function MapWithPinning({
     }
   }, [onBookRide]);
 
+  // Handle "Set transport location" action
+  const handleSelectLocation = useCallback((coordinates) => {
+    console.log('Set transport search location:', coordinates);
+    if (onSelectLocation) {
+      onSelectLocation(coordinates);
+    }
+  }, [onSelectLocation]);
+
   // Create enhanced markers including the pinned location
   const enhancedMarkers = [...markers];
   
@@ -138,6 +157,19 @@ function MapWithPinning({
     });
   }
 
+  // Add transport anchor marker if different from pinned location
+  if (transportAnchor && (!pinnedLocation || 
+      (pinnedLocation.lat !== transportAnchor.lat || pinnedLocation.lng !== transportAnchor.lng))) {
+    enhancedMarkers.push({
+      latitude: transportAnchor.lat,
+      longitude: transportAnchor.lng,
+      title: 'Transport Search Area',
+      icon: '🎯',
+      color: '#2196F3',
+      description: 'Transport data shown within 100m'
+    });
+  }
+
   return (
     <div ref={mapContainerRef} style={{ position: 'relative', height }}>
       <MapView
@@ -145,12 +177,13 @@ function MapWithPinning({
         zoom={zoom}
         markers={enhancedMarkers}
         routes={routes}
-        bounds={bounds}
         height={height}
         showControls={showControls}
         onMapClick={handleMapClick}
         onZoomChange={onZoomChange}
         onMapMove={onMapMove}
+        transportAnchor={transportAnchor}
+        showTransportArea={showTransportArea}
       />
       
       <MapPinContextMenu
@@ -164,6 +197,7 @@ function MapWithPinning({
         onAddToFavorites={handleAddToFavorites}
         onEditLocation={handleEditLocation}
         onBookRide={handleBookRide}
+        onSelectLocation={handleSelectLocation}
       />
     </div>
   );

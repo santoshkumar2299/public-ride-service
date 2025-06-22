@@ -1,0 +1,491 @@
+.ride-booking-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+  animation: modal-overlay-appear 0.3s ease-out;
+}
+
+@keyframes modal-overlay-appear {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.ride-booking-modal {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow: hidden;
+  animation: modal-appear 0.3s ease-out;
+}
+
+@keyframes modal-appear {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Header */
+.modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 24px 24px 16px;
+  background: linear-gradient(135deg, rgba(40, 167, 69, 0.1) 0%, rgba(40, 167, 69, 0.05) 100%);
+  border-bottom: 1px solid rgba(40, 167, 69, 0.2);
+}
+
+.route-info {
+  flex: 1;
+}
+
+.modal-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 12px 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.title-icon {
+  font-size: 1.8rem;
+}
+
+.route-details {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.route-point {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.point-icon {
+  font-size: 1rem;
+}
+
+.point-text {
+  font-size: 0.85rem;
+  color: #666;
+  max-width: 150px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.route-arrow {
+  font-size: 1.2rem;
+  color: #666;
+  font-weight: bold;
+}
+
+.modal-close-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.modal-close-btn:hover {
+  background: rgba(0, 0, 0, 0.1);
+  color: #333;
+}
+
+/* Body */
+.modal-body {
+  padding: 0;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.loading-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 24px;
+  gap: 16px;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #28a745;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-text {
+  margin: 0;
+  color: #666;
+  font-size: 1rem;
+}
+
+.providers-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px 0;
+}
+
+.provider-group {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  padding-bottom: 16px;
+}
+
+.provider-group:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.provider-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 24px 12px;
+}
+
+.provider-logo {
+  font-size: 1.5rem;
+}
+
+.provider-name {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.rides-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 24px;
+}
+
+.ride-option {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  width: 100%;
+}
+
+.ride-option:hover {
+  background: rgba(40, 167, 69, 0.05);
+  border-color: rgba(40, 167, 69, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.ride-option.selected {
+  background: rgba(40, 167, 69, 0.1);
+  border-color: #28a745;
+  box-shadow: 0 0 0 2px rgba(40, 167, 69, 0.2);
+}
+
+.ride-icon {
+  font-size: 1.5rem;
+  min-width: 32px;
+}
+
+.ride-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ride-type {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.ride-capacity {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.ride-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.ride-time {
+  font-size: 0.9rem;
+  color: #28a745;
+  font-weight: 600;
+}
+
+.ride-price {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #333;
+}
+
+.carbon-info,
+.health-info,
+.crowding-info {
+  font-size: 0.8rem;
+  color: #28a745;
+  font-weight: 500;
+}
+
+.health-info {
+  color: #dc3545;
+}
+
+.crowding-info {
+  color: #6c757d;
+}
+
+.rider-info {
+  color: #007bff;
+  font-weight: 600;
+}
+
+/* Footer */
+.modal-footer {
+  padding: 20px 24px 24px;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  background: rgba(248, 249, 250, 0.8);
+}
+
+.selection-summary {
+  margin-bottom: 16px;
+}
+
+.selected-ride {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 16px;
+  background: rgba(40, 167, 69, 0.1);
+  border: 1px solid rgba(40, 167, 69, 0.3);
+  border-radius: 12px;
+}
+
+.summary-icon {
+  font-size: 1.5rem;
+}
+
+.summary-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.summary-type {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.summary-provider {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.summary-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.summary-price {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #28a745;
+}
+
+.summary-time {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.summary-carbon {
+  font-size: 0.8rem;
+  color: #28a745;
+  font-weight: 500;
+}
+
+.selection-prompt {
+  text-align: center;
+  color: #666;
+  font-style: italic;
+  margin: 0;
+  padding: 20px;
+}
+
+.action-buttons {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.cancel-btn {
+  padding: 12px 24px;
+  border: 1px solid #ddd;
+  background: white;
+  color: #666;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancel-btn:hover {
+  background: #f8f9fa;
+  border-color: #bbb;
+  color: #333;
+}
+
+.book-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+}
+
+.book-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #218838 0%, #1e7e34 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+}
+
+.book-btn:disabled {
+  background: #ddd;
+  color: #999;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-icon {
+  font-size: 1rem;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .ride-booking-modal-overlay {
+    padding: 10px;
+  }
+  
+  .ride-booking-modal {
+    max-width: 100%;
+    max-height: 95vh;
+  }
+  
+  .modal-header {
+    padding: 20px 20px 12px;
+  }
+  
+  .modal-title {
+    font-size: 1.3rem;
+  }
+  
+  .route-details {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .route-arrow {
+    display: none;
+  }
+  
+  .rides-list {
+    padding: 0 20px;
+  }
+  
+  .ride-option {
+    padding: 12px;
+    gap: 12px;
+  }
+  
+  .action-buttons {
+    flex-direction: column-reverse;
+    gap: 8px;
+  }
+  
+  .cancel-btn,
+  .book-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Focus styles for accessibility */
+.modal-close-btn:focus,
+.ride-option:focus,
+.cancel-btn:focus,
+.book-btn:focus {
+  outline: 2px solid #007bff;
+  outline-offset: 2px;
+}

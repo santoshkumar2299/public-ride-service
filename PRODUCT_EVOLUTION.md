@@ -36,6 +36,38 @@ bus_spot_reports, bus_report_verifications
 
 ---
 
+## 🎯 USER PROFILE & COMMUNITY FEATURES ROADMAP
+
+### **Phase 1: Community Trust & Gamification (Current)**
+**Goal:** Build trust and engagement through community-driven features
+
+**Features Being Implemented:**
+- ✅ **Enhanced Trust System** - Community ratings, verified contributor badges
+- ✅ **Sustainability Score** - Carbon footprint tracking, eco-friendly transport rewards
+- ✅ **Basic Gamification** - Points, badges, transport streaks
+- ✅ **Enhanced Profile** - Transport preferences, accessibility needs, sustainability goals
+- ✅ **Backend Support** - New API endpoints for user profile features
+
+### **Phase 2: Community Networks (Next)**
+**Goal:** Connect users through shared transport experiences
+
+**Planned Features:**
+- **Neighborhood Networks** - Local transport circles, carpooling groups
+- **Collaborative Features** - Route sharing, crowdsourced transport data
+- **Achievement System** - Advanced badges, community challenges
+- **Smart Learning** - Pattern recognition, contextual recommendations
+
+### **Phase 3: Accessibility & Integration (Future)**
+**Goal:** Universal access and real-world integration
+
+**Planned Features:**  
+- **Universal Design** - Multi-language, accessibility, offline functionality
+- **Multi-Modal Integration** - Transport wallet, universal transit cards
+- **Mutual Aid Features** - Community support, emergency assistance
+- **Business Partnerships** - Local discounts, workplace integration
+
+---
+
 ## 📈 Evolution Changelog
 
 ### Phase 1: Basic Ride Sharing (Initial MVP)

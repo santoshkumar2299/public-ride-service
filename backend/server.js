@@ -69,6 +69,71 @@ app.use(express.json());
 // Serve uploaded photos
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// User preferences endpoints
+app.get('/api/users/:userId/preferences', (req, res) => {
+  const { userId } = req.params;
+  
+  db.get(
+    'SELECT preferences FROM users WHERE id = ?',
+    [userId],
+    (err, row) => {
+      if (err) {
+        console.error('Database error:', err);
+        return res.status(500).json({ error: 'Database error' });
+      }
+      
+      if (!row) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      
+      const preferences = row.preferences ? JSON.parse(row.preferences) : null;
+      res.json({ preferences });
+    }
+  );
+});
+
+app.put('/api/users/:userId/preferences', (req, res) => {
+  const { userId } = req.params;
+  const { preferences } = req.body;
+  
+  if (!preferences) {
+    return res.status(400).json({ error: 'Preferences data is required' });
+  }
+  
+  db.run(
+    'UPDATE users SET preferences = ? WHERE id = ?',
+    [JSON.stringify(preferences), userId],
+    function(err) {
+      if (err) {
+        console.error('Database error:', err);
+        return res.status(500).json({ error: 'Database error' });
+      }
+      
+      if (this.changes === 0) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      
+      res.json({ message: 'Preferences updated successfully' });
+    }
+  );
+});
+
+// Saved places endpoints (placeholder for now)
+app.get('/api/users/:userId/places', (req, res) => {
+  // Return empty array for now - SavedPlaces component expects this
+  res.json({ places: [] });
+});
+
+app.post('/api/users/:userId/places', (req, res) => {
+  // Placeholder for adding saved places
+  res.json({ message: 'Place saved successfully' });
+});
+
+app.delete('/api/users/:userId/places/:placeId', (req, res) => {
+  // Placeholder for deleting saved places
+  res.json({ message: 'Place deleted successfully' });
+});
+
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
@@ -377,39 +442,119 @@ app.patch('/api/requests/:id', (req, res) => {
   });
 });
 
-// User history endpoints
+// User history endpoints - Enhanced for contributions
 app.get('/api/users/:userId/history', (req, res) => {
   const { userId } = req.params;
+  const { type, timeRange } = req.query;
   
   if (!userId) {
     return res.status(400).json({ error: 'User ID is required' });
   }
 
-  // Get user's rides and requests
-  const ridesPromise = new Promise((resolve, reject) => {
-    db.all('SELECT * FROM rides WHERE user_id = ? ORDER BY created_at DESC', [userId], (err, rows) => {
-      if (err) reject(err);
-      else resolve(rows);
-    });
-  });
+  // Calculate time filter
+  let timeFilter = '';
+  let timeParam = null;
+  if (timeRange && timeRange !== 'all') {
+    const days = {
+      '7d': 7,
+      '30d': 30,
+      '90d': 90,
+      '1y': 365
+    };
+    if (days[timeRange]) {
+      timeFilter = `AND datetime(created_at) > datetime('now', '-${days[timeRange]} days')`;
+      // For bus reports, use reported_at instead
+      if (type === 'spot_reports') {
+        timeFilter = `AND datetime(reported_at) > datetime('now', '-${days[timeRange]} days')`;
+      } else if (type === 'verifications') {
+        timeFilter = `AND datetime(verified_at) > datetime('now', '-${days[timeRange]} days')`;
+      } else if (type === 'help_sessions') {
+        timeFilter = `AND datetime(start_time) > datetime('now', '-${days[timeRange]} days')`;
+      }
+    }
+  }
 
-  const requestsPromise = new Promise((resolve, reject) => {
-    db.all('SELECT * FROM requests WHERE user_id = ? ORDER BY created_at DESC', [userId], (err, rows) => {
-      if (err) reject(err);
-      else resolve(rows);
-    });
-  });
-
-  Promise.all([ridesPromise, requestsPromise])
-    .then(([rides, requests]) => {
-      res.json({
-        rides: rides,
-        requests: requests
+  // Handle different contribution types
+  switch (type) {
+    case 'spot_reports':
+      let spotTimeFilter = timeFilter;
+      if (type === 'spot_reports' && spotTimeFilter) {
+        spotTimeFilter = spotTimeFilter.replace('created_at', 'reported_at');
+      }
+      const spotQuery = `
+        SELECT bsr.*, 
+               CASE WHEN bsr.photo_path IS NOT NULL THEN 1 ELSE 0 END as has_photo,
+               CASE WHEN bsr.verification_count > 0 THEN 1 ELSE 0 END as is_verified
+        FROM bus_spot_reports bsr 
+        WHERE bsr.user_id = ? ${spotTimeFilter}
+        ORDER BY bsr.reported_at DESC
+      `;
+      db.all(spotQuery, [userId], (err, rows) => {
+        if (err) {
+          console.error('Error fetching spot reports:', err);
+          return res.status(500).json({ error: 'Failed to fetch spot reports' });
+        }
+        res.json({ reports: rows || [], total_credits: 0 });
       });
-    })
-    .catch(err => {
-      res.status(500).json({ error: 'Failed to fetch user history' });
-    });
+      break;
+
+    case 'verifications':
+      let verifyTimeFilter = timeFilter;
+      if (type === 'verifications' && verifyTimeFilter) {
+        verifyTimeFilter = verifyTimeFilter.replace('created_at', 'verified_at');
+      }
+      const verifyQuery = `
+        SELECT brv.*, bsr.bus_number, bsr.reported_at as original_report_time
+        FROM bus_report_verifications brv
+        LEFT JOIN bus_spot_reports bsr ON brv.report_id = bsr.id
+        WHERE brv.verifier_user_id = ? ${verifyTimeFilter}
+        ORDER BY brv.verified_at DESC
+      `;
+      db.all(verifyQuery, [userId], (err, rows) => {
+        if (err) {
+          console.error('Error fetching verifications:', err);
+          return res.status(500).json({ error: 'Failed to fetch verifications' });
+        }
+        res.json({ verifications: rows || [] });
+      });
+      break;
+
+    case 'help_sessions':
+      // For now, return empty array as help sessions table might not exist yet
+      res.json({ sessions: [] });
+      break;
+
+    default:
+      // Original behavior - get rides and requests
+      const ridesPromise = new Promise((resolve, reject) => {
+        const rideQuery = `SELECT * FROM rides WHERE user_id = ? ${timeFilter} ORDER BY created_at DESC`;
+        db.all(rideQuery, [userId], (err, rows) => {
+          if (err) reject(err);
+          else resolve(rows);
+        });
+      });
+
+      const requestsPromise = new Promise((resolve, reject) => {
+        const requestQuery = `SELECT * FROM requests WHERE user_id = ? ${timeFilter} ORDER BY created_at DESC`;
+        db.all(requestQuery, [userId], (err, rows) => {
+          if (err) reject(err);
+          else resolve(rows);
+        });
+      });
+
+      Promise.all([ridesPromise, requestsPromise])
+        .then(([rides, requests]) => {
+          res.json({
+            rides: rides,
+            requests: requests
+          });
+        })
+        .catch(err => {
+          console.error('Error fetching user history:', err);
+          res.status(500).json({ error: 'Failed to fetch user history' });
+        });
+      break;
+  }
 });
 
 // Get recent locations for a user (for location picker)
@@ -1049,12 +1194,20 @@ app.post('/api/reports/bus-spot', upload.single('photo'), async (req, res) => {
       bus_status 
     } = req.body;
     
-    if (!bus_number || !location || !user_id) {
-      return res.status(400).json({ error: 'bus_number, location, and user_id are required' });
+    if (!bus_number || !user_id) {
+      return res.status(400).json({ error: 'bus_number and user_id are required' });
     }
 
     // Parse location if it's a string
-    const locationData = typeof location === 'string' ? JSON.parse(location) : location;
+    let locationData = { lat: null, lng: null };
+    if (location) {
+      try {
+        locationData = typeof location === 'string' ? JSON.parse(location) : location;
+      } catch (error) {
+        console.error('Error parsing location:', error);
+        return res.status(400).json({ error: 'Invalid location format' });
+      }
+    }
     
     // Handle photo upload
     let photoPath = null;
@@ -1084,8 +1237,8 @@ app.post('/api/reports/bus-spot', upload.single('photo'), async (req, res) => {
       user_id,
       bus_number,
       route_id || null,
-      locationData.lat,
-      locationData.lng,
+      locationData.lat || null,
+      locationData.lng || null,
       confidence || 'medium',
       additional_info || null,
       photoPath,
@@ -1094,7 +1247,9 @@ app.post('/api/reports/bus-spot', upload.single('photo'), async (req, res) => {
     ], function(err) {
       if (err) {
         console.error('Error inserting spot report:', err);
-        return res.status(500).json({ error: 'Failed to save spot report' });
+        console.error('SQL:', spotReportSql);
+        console.error('Params:', [user_id, bus_number, route_id, locationData.lat, locationData.lng, confidence, additional_info, photoPath, busStatusData, timestamp]);
+        return res.status(500).json({ error: 'Failed to save spot report', details: err.message });
       }
 
       // Add to social score with photo bonus

@@ -1,0 +1,262 @@
+/* Bus Spot Verification Card */
+.bus-spot-verification-card {
+  position: fixed;
+  bottom: 120px;
+  left: 20px;
+  right: 20px;
+  max-width: 400px;
+  margin: 0 auto;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  z-index: 1000;
+  animation: slide-up 0.3s ease-out;
+}
+
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.verification-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 16px 16px 0 16px;
+}
+
+.spot-info {
+  flex: 1;
+}
+
+.bus-number {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1976D2;
+  margin-bottom: 4px;
+}
+
+.reporter-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.reporter {
+  font-size: 13px;
+  color: #666;
+  font-weight: 500;
+}
+
+.timestamp {
+  font-size: 12px;
+  color: #999;
+}
+
+.close-btn {
+  background: rgba(0, 0, 0, 0.1);
+  border: none;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  color: #666;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.close-btn:hover {
+  background: rgba(0, 0, 0, 0.2);
+  color: #333;
+}
+
+.verification-content {
+  padding: 0 16px 16px 16px;
+}
+
+.spot-details {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0;
+  flex-wrap: wrap;
+}
+
+.confidence-badge {
+  color: white;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.photo-indicator {
+  background: rgba(76, 175, 80, 0.1);
+  color: #4CAF50;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+.additional-info {
+  background: #F8F9FA;
+  border-radius: 8px;
+  padding: 10px;
+  margin: 8px 0;
+  font-size: 13px;
+  color: #555;
+  border-left: 3px solid #2196F3;
+}
+
+.verification-question {
+  text-align: center;
+  margin: 16px 0;
+}
+
+.verification-question h4 {
+  margin: 0 0 4px 0;
+  font-size: 15px;
+  color: #333;
+}
+
+.verification-question p {
+  margin: 0;
+  font-size: 12px;
+  color: #666;
+}
+
+.verification-actions {
+  display: flex;
+  gap: 8px;
+  margin: 16px 0;
+}
+
+.verify-btn {
+  flex: 1;
+  padding: 12px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.verify-btn.accurate {
+  background: linear-gradient(135deg, #4CAF50 0%, #45A049 100%);
+  color: white;
+}
+
+.verify-btn.accurate:hover:not(:disabled) {
+  background: linear-gradient(135deg, #45A049 0%, #3E8E41 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+}
+
+.verify-btn.inaccurate {
+  background: linear-gradient(135deg, #F44336 0%, #E53935 100%);
+  color: white;
+}
+
+.verify-btn.inaccurate:hover:not(:disabled) {
+  background: linear-gradient(135deg, #E53935 0%, #D32F2F 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(244, 67, 54, 0.3);
+}
+
+.verify-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.verification-rewards {
+  text-align: center;
+  padding: 8px;
+  background: rgba(255, 193, 7, 0.1);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 193, 7, 0.3);
+}
+
+.reward-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.reward-icon {
+  font-size: 14px;
+}
+
+.reward-text {
+  font-size: 12px;
+  color: #F57C00;
+  font-weight: 600;
+}
+
+.verification-loading {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #666;
+  font-weight: 500;
+}
+
+.loading-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top: 2px solid #2196F3;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Mobile optimizations */
+@media (max-width: 480px) {
+  .bus-spot-verification-card {
+    left: 16px;
+    right: 16px;
+    bottom: 100px;
+  }
+  
+  .verification-actions {
+    flex-direction: column;
+  }
+  
+  .verify-btn {
+    padding: 14px 16px;
+  }
+}

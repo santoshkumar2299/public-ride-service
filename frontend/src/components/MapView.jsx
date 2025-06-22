@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMapEvents, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, Circle, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { config } from '../config/env';
@@ -68,10 +68,64 @@ function MapBoundsHandler({ bounds }) {
       // Fit the map to the bounds with padding
       map.fitBounds(leafletBounds, {
         padding: [20, 20], // 20px padding on all sides
-        maxZoom: 16,       // Don't zoom in too close
+        maxZoom: 18,       // Allow closer zoom for 200m view
         animate: true,     // Smooth animation
         duration: 0.5      // Animation duration
       });
+    }
+  }, [map, bounds]);
+  
+  return null;
+}
+
+// Component to handle max bounds restriction (prevent panning outside bounds)
+function MapMaxBoundsHandler({ bounds }) {
+  const map = useMap();
+  
+  useEffect(() => {
+    if (bounds && bounds.north && bounds.south && bounds.east && bounds.west) {
+      const leafletBounds = L.latLngBounds(
+        [bounds.south, bounds.west], // southwest
+        [bounds.north, bounds.east]  // northeast
+      );
+      
+      console.log('Setting strict max bounds:', bounds);
+      console.log('Leaflet bounds object:', leafletBounds);
+      
+      // Set max bounds to restrict panning
+      map.setMaxBounds(leafletBounds);
+      
+      // Set strict zoom restrictions for the bounded area
+      map.setMinZoom(16); // Prevent zooming out too far from 200m
+      map.setMaxZoom(20); // Allow very detailed view
+      
+      // Fit to bounds initially with no padding
+      map.fitBounds(leafletBounds, {
+        padding: [0, 0], // No padding for strict bounds
+        maxZoom: 18      // Good zoom for 200m view
+      });
+      
+      // Add aggressive pan restriction listener
+      const restrictPan = () => {
+        const currentCenter = map.getCenter();
+        if (!leafletBounds.contains(currentCenter)) {
+          console.log('Pan out of bounds detected, forcing back to center');
+          map.panTo(leafletBounds.getCenter(), { animate: false });
+        }
+      };
+      
+      map.on('moveend', restrictPan);
+      map.on('drag', restrictPan);
+      
+      return () => {
+        // Clean up max bounds and listeners when component unmounts
+        console.log('Cleaning up max bounds');
+        map.off('moveend', restrictPan);
+        map.off('drag', restrictPan);
+        map.setMaxBounds(null);
+        map.setMinZoom(1);
+        map.setMaxZoom(18);
+      };
     }
   }, [map, bounds]);
   
@@ -124,6 +178,72 @@ function MapZoomHandler({ zoom, onZoomChange }) {
       };
     }
   }, [map, onZoomChange]);
+  
+  return null;
+}
+
+// Component to handle radius bounds restriction
+function RadiusBoundsHandler({ center, radiusMeters = 100 }) {
+  const map = useMap();
+  
+  useEffect(() => {
+    if (!center || !center.length) return;
+    
+    const restrictPan = () => {
+      const mapCenter = map.getCenter();
+      const restrictionCenter = L.latLng(center[0], center[1]);
+      
+      // Calculate distance from restriction center
+      const distance = mapCenter.distanceTo(restrictionCenter);
+      
+      if (distance > radiusMeters) {
+        // Calculate the bearing (direction) from restriction center to current position
+        const lat1 = restrictionCenter.lat * Math.PI / 180;
+        const lat2 = mapCenter.lat * Math.PI / 180;
+        const deltaLng = (mapCenter.lng - restrictionCenter.lng) * Math.PI / 180;
+        
+        const y = Math.sin(deltaLng) * Math.cos(lat2);
+        const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(deltaLng);
+        const bearing = Math.atan2(y, x);
+        
+        // Calculate the maximum allowed position on the radius boundary
+        // Convert radius from meters to degrees (approximate)
+        const radiusInDegrees = radiusMeters / 111320; // 1 degree ≈ 111.32 km
+        
+        const maxLat = restrictionCenter.lat + radiusInDegrees * Math.cos(bearing);
+        const maxLng = restrictionCenter.lng + radiusInDegrees * Math.sin(bearing);
+        
+        // Move map back to boundary
+        map.panTo([maxLat, maxLng], { animate: false });
+      }
+    };
+    
+    const restrictZoom = () => {
+      const currentZoom = map.getZoom();
+      const minZoom = 15; // Prevent zooming out too far from 100m radius
+      const maxZoom = 20; // Prevent zooming in too close
+      
+      if (currentZoom < minZoom) {
+        map.setZoom(minZoom);
+      } else if (currentZoom > maxZoom) {
+        map.setZoom(maxZoom);
+      }
+    };
+    
+    map.on('move', restrictPan);
+    map.on('zoomend', restrictZoom);
+    
+    // Set initial zoom bounds
+    map.setMinZoom(15);
+    map.setMaxZoom(20);
+    
+    return () => {
+      map.off('move', restrictPan);
+      map.off('zoomend', restrictZoom);
+      map.setMinZoom(1); // Reset to defaults
+      map.setMaxZoom(18);
+    };
+  }, [map, center, radiusMeters]);
   
   return null;
 }
@@ -207,7 +327,9 @@ function MapView({
   height = '400px',
   showControls = true,
   onZoomChange = null, // New prop for external zoom control
-  onMapMove = null // New prop for map movement detection
+  onMapMove = null, // New prop for map movement detection
+  transportAnchor = null, // New prop for transport search anchor point
+  showTransportArea = false // New prop to show transport search circle
 }) {
   const mapRef = useRef();
   const [routeLines, setRouteLines] = useState([]);
@@ -310,6 +432,21 @@ function MapView({
         
         {/* Custom zoom controls - always visible */}
         {showControls && <CustomZoomControls />}
+        
+        {/* Transport search area circle */}
+        {showTransportArea && transportAnchor && (
+          <Circle
+            center={[transportAnchor.lat, transportAnchor.lng]}
+            radius={100}
+            pathOptions={{
+              color: '#2196F3',
+              fillColor: '#2196F3',
+              fillOpacity: 0.1,
+              weight: 2,
+              dashArray: '5, 10'
+            }}
+          />
+        )}
         
         {/* Render route polylines */}
         {routeLines.map((route, index) => (
